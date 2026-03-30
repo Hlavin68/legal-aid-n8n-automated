@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kenyan Legal AI Assistant</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h2>⚖️ Kenyan Legal AI Assistant</h2>
+    <p>Get legal guidance for Kenyan law powered by AI</p>
+  </header>
+  
+  <div id="chat-container">
+    <div class="message bot-message">
+      <strong>Welcome!</strong><br>Ask about: Land disputes, Employment, Family law, Criminal law, Business contracts, etc.
+    </div>
+  </div>
+  
+  <div id="input-container">
+    <textarea id="question" placeholder="Type your legal question..." rows="1"></textarea>
+    <button onclick="sendMessage()">Send</button>
+    <button class="clear-btn" onclick="clearChat()">Clear</button>
+  </div>
+
+  <script>
+    const N8N_WEBHOOK_URL = "http://localhost:5678/webhook-test/legal-assistant";
+    let chatHistory = [];
+    let isProcessing = false;
+    
+    const textarea = document.getElementById('question');
+    const chatContainer = document.getElementById('chat-container');
+    
+    // Auto-resize textarea
+    textarea.addEventListener('input', function() {
+      this.style.height = 'auto';
+      this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+    });
+    
+    // Enter to send, Shift+Enter for new line
+    textarea.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+    
+    // Add message to UI
+    function addMessage(text, isUser) {
+      const div = document.createElement('div');
+      div.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
+      div.textContent = text;
+      chatContainer.appendChild(div);
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+    
+    // Send message to n8n
+    async function sendMessage() {
+      if (isProcessing) return;
+      
+      const question = textarea.value.trim();
+      if (!question) return;
+      
+      addMessage(question, true);
+      chatHistory.push({ role: 'user', content: question });
+      
+      textarea.value = '';
+      textarea.style.height = 'auto';
+      textarea.disabled = true;
+      document.querySelectorAll('button').forEach(btn => btn.disabled = true);
+      isProcessing = true;
+      
+      try {
+        const response = await fetch(N8N_WEBHOOK_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: question,
+            history: chatHistory.slice(-5)
+          })
+        });
+        
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        const data = await response.json();
+        let botResponse = data.response || data.output || data.message || data.text || JSON.stringify(data);
+        
+        addMessage(botResponse, false);
+        chatHistory.push({ role: 'assistant', content: botResponse });
+        
+      } catch (error) {
+        addMessage(`❌ Error: ${error.message}. Ensure n8n is running at ${N8N_WEBHOOK_URL}`, false);
+      } finally {
+        isProcessing = false;
+        textarea.disabled = false;
+        document.querySelectorAll('button').forEach(btn => btn.disabled = false);
+        textarea.focus();
+      }
+    }
+    
+    // Clear chat
+    function clearChat() {
+      if (confirm("Clear chat?")) {
+        chatHistory = [];
+        chatContainer.innerHTML = '<div class="message bot-message"><strong>Chat cleared!</strong> Ask your legal questions.</div>';
+      }
+    }
+    
+    textarea.focus();
+  </script>
+</body>
+</html>
+</html>
