@@ -1,74 +1,127 @@
-import React, { useState, useRef, useEffect } from 'react';
-import axios from 'axios';
-import Header from './components/Header';
-import ChatContainer from './components/ChatContainer';
-import InputBox from './components/InputBox';
-import './App.css';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import { CaseProvider } from './context/CaseContext';
+import ProtectedRoute from './components/ProtectedRoute';
+import Navigation from './components/Navigation';
+import LoginPage from './pages/Auth';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+// Client Pages
+import Dashboard from './pages/Dashboard';
+import ChatPage from './pages/ChatPage';
+import CaseDetails from './pages/CaseDetails';
+import DocumentGenerator from './pages/DocumentGenerator';
+import CaseBase from './pages/CaseBase';
 
 function App() {
-  const [messages, setMessages] = useState([
-    { id: 1, role: 'bot', text: 'Welcome! Ask about: Land disputes, Employment, Family law, Criminal law, Business contracts, etc.' }
-  ]);
-  const [loading, setLoading] = useState(false);
-  const chatEndRef = useRef(null);
-
-  const scrollToBottom = () => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  const handleSendMessage = async (message) => {
-    if (!message.trim()) return;
-
-    // Add user message
-    const userMessage = { id: Date.now(), role: 'user', text: message };
-    setMessages(prev => [...prev, userMessage]);
-    setLoading(true);
-
-    try {
-      const response = await axios.post(`${API_URL}/api/chat/send`, {
-        message,
-        history: messages.filter(m => m.role !== 'bot' || m.id > 1).slice(-5)
-      });
-
-      const botMessage = {
-        id: Date.now() + 1,
-        role: 'bot',
-        text: response.data.response
-      };
-
-      setMessages(prev => [...prev, botMessage]);
-    } catch (error) {
-      const errorMessage = {
-        id: Date.now() + 1,
-        role: 'bot',
-        text: `❌ Error: ${error.message}. Ensure backend is running at ${API_URL}`
-      };
-      setMessages(prev => [...prev, errorMessage]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleClear = () => {
-    if (window.confirm('Clear chat history?')) {
-      setMessages([
-        { id: 1, role: 'bot', text: 'Chat cleared! Ask your legal questions.' }
-      ]);
-    }
-  };
-
   return (
-    <div className="app">
-      <Header />
-      <ChatContainer messages={messages} ref={chatEndRef} />
-      <InputBox onSendMessage={handleSendMessage} onClear={handleClear} isLoading={loading} />
-    </div>
+    <AuthProvider>
+      <CaseProvider>
+        <Router>
+          <div className="d-flex flex-column min-vh-100">
+            <Routes>
+              {/* Auth */}
+              <Route path="/auth" element={<LoginPage />} />
+
+              {/* Protected Routes Wrapper */}
+              <Route
+                path="/*"
+                element={
+                  <ProtectedRoute>
+                    <Navigation />
+                    <main className="flex-grow-1">
+                      <Routes>
+                        {/* Default redirect */}
+                        <Route path="/" element={<Navigate to="/client/dashboard" replace />} />
+
+                        {/* CLIENT ROUTES */}
+                        <Route
+                          path="/client/dashboard"
+                          element={
+                            <ProtectedRoute requiredRole="client">
+                              <Dashboard />
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="/client/case/:caseId"
+                          element={
+                            <ProtectedRoute requiredRole="client">
+                              <CaseDetails />
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="/client/documents"
+                          element={
+                            <ProtectedRoute requiredRole="client">
+                              <DocumentGenerator />
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="/client/chat"
+                          element={
+                            <ProtectedRoute requiredRole="client">
+                              <ChatPage />
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="/client/case-base"
+                          element={
+                            <ProtectedRoute requiredRole="client">
+                              <CaseBase />
+                            </ProtectedRoute>
+                          }
+                        />
+
+                        {/* LAWYER ROUTES */}
+                        <Route
+                          path="/lawyer/dashboard"
+                          element={
+                            <ProtectedRoute requiredRole="lawyer">
+                              <Dashboard />
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="/lawyer/case/:caseId"
+                          element={
+                            <ProtectedRoute requiredRole="lawyer">
+                              <CaseDetails />
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="/lawyer/chat"
+                          element={
+                            <ProtectedRoute requiredRole="lawyer">
+                              <ChatPage />
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="/lawyer/case-base"
+                          element={
+                            <ProtectedRoute requiredRole="lawyer">
+                              <CaseBase />
+                            </ProtectedRoute>
+                          }
+                        />
+
+                        {/* Fallback */}
+                        <Route path="*" element={<Navigate to="/" replace />} />
+                      </Routes>
+                    </main>
+                  </ProtectedRoute>
+                }
+              />
+            </Routes>
+          </div>
+        </Router>
+      </CaseProvider>
+    </AuthProvider>
   );
 }
 

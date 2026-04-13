@@ -3,6 +3,7 @@ import axios from 'axios';
 export const sendMessage = async (req, res) => {
   try {
     const { message, history } = req.body;
+    const role = req.user?.role || 'client';
 
     if (!message) {
       return res.status(400).json({ error: 'Message is required' });
@@ -17,10 +18,16 @@ export const sendMessage = async (req, res) => {
       });
     }
 
+    // Add role context to the message
+    const enrichedMessage = role === 'lawyer' 
+      ? `[LAWYER REQUEST] ${message}` 
+      : `[CLIENT REQUEST] ${message}`;
+
     // Call n8n webhook
     const response = await axios.post(N8N_WEBHOOK_URL, {
-      message,
-      history: history || []
+      message: enrichedMessage,
+      history: history || [],
+      userRole: role
     });
 
     const data = response.data;
@@ -36,12 +43,13 @@ export const sendMessage = async (req, res) => {
 
     // Handle structured responses
     if (data['1. Situation Summary']) {
-      botResponse = formatStructuredResponse(data);
+      botResponse = formatStructuredResponse(data, role);
     }
 
     res.json({ 
       success: true,
-      response: botResponse 
+      response: botResponse,
+      userRole: role
     });
 
   } catch (error) {
@@ -53,25 +61,47 @@ export const sendMessage = async (req, res) => {
   }
 };
 
-// Format structured n8n response
-const formatStructuredResponse = (data) => {
+// Format structured n8n response based on user role
+const formatStructuredResponse = (data, role = 'client') => {
   let formatted = "";
   
   if (data['1. Situation Summary']) {
     formatted += `📋 Situation Summary\n${data['1. Situation Summary']}\n\n`;
   }
-  if (data['2. Your Legal Rights']) {
-    const rights = Array.isArray(data['2. Your Legal Rights']) 
-      ? data['2. Your Legal Rights'].join('\n• ')
-      : data['2. Your Legal Rights'];
-    formatted += `⚖️ Your Legal Rights\n• ${rights}\n\n`;
+  
+  if (role === 'lawyer') {
+    // Lawyer gets more detailed sections
+    if (data['2. Your Legal Rights']) {
+      const rights = Array.isArray(data['2. Your Legal Rights']) 
+        ? data['2. Your Legal Rights'].join('\n• ')
+        : data['2. Your Legal Rights'];
+      formatted += `⚖️ Legal Analysis\n• ${rights}\n\n`;
+    }
+    if (data['3. What You Should Do (Step-by-Step)']) {
+      const steps = Array.isArray(data['3. What You Should Do (Step-by-Step)']) 
+        ? data['3. What You Should Do (Step-by-Step)'].map((s, i) => `${i+1}. ${s}`).join('\n')
+        : data['3. What You Should Do (Step-by-Step)'];
+      formatted += `📋 Recommended Actions\n${steps}\n\n`;
+    }
+    if (data['4. Case Updates']) {
+      formatted += `📊 Case Management\n${typeof data['4. Case Updates'] === 'string' ? data['4. Case Updates'] : JSON.stringify(data['4. Case Updates'], null, 2)}\n\n`;
+    }
+  } else {
+    // Client gets simplified guidance
+    if (data['2. Your Legal Rights']) {
+      const rights = Array.isArray(data['2. Your Legal Rights']) 
+        ? data['2. Your Legal Rights'].join('\n• ')
+        : data['2. Your Legal Rights'];
+      formatted += `⚖️ Your Legal Rights\n• ${rights}\n\n`;
+    }
+    if (data['3. What You Should Do (Step-by-Step)']) {
+      const steps = Array.isArray(data['3. What You Should Do (Step-by-Step)']) 
+        ? data['3. What You Should Do (Step-by-Step)'].map((s, i) => `${i+1}. ${s}`).join('\n')
+        : data['3. What You Should Do (Step-by-Step)'];
+      formatted += `📝 What You Should Do\n${steps}\n\n`;
+    }
   }
-  if (data['3. What You Should Do (Step-by-Step)']) {
-    const steps = Array.isArray(data['3. What You Should Do (Step-by-Step)']) 
-      ? data['3. What You Should Do (Step-by-Step)'].map((s, i) => `${i+1}. ${s}`).join('\n')
-      : data['3. What You Should Do (Step-by-Step)'];
-    formatted += `📝 What You Should Do\n${steps}\n\n`;
-  }
+  
   if (data['4. Where to Get Help']) {
     const help = Array.isArray(data['4. Where to Get Help'])
       ? data['4. Where to Get Help'].join('\n• ')

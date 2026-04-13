@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import './InputBox.css';
+import React, { useState, useRef, useEffect } from 'react';
 
 function InputBox({ onSendMessage, onClear, isLoading }) {
   const [message, setMessage] = useState('');
+  const textareaRef = useRef(null);
 
   const handleSend = () => {
     if (message.trim()) {
@@ -11,7 +11,7 @@ function InputBox({ onSendMessage, onClear, isLoading }) {
     }
   };
 
-  const handleKeyPress = (e) => {
+  const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
@@ -23,23 +23,58 @@ function InputBox({ onSendMessage, onClear, isLoading }) {
     setMessage('');
   };
 
+  // 🔥 AUTO RESIZE LOGIC
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    textarea.style.height = 'auto'; // reset height
+    textarea.style.height = textarea.scrollHeight + 'px'; // expand
+  }, [message]);
+
   return (
-    <div className="input-container">
+    <div className="d-flex align-items-end gap-2 w-100">
+
+      {/* TEXTAREA */}
       <textarea
-        className="input-box"
+        ref={textareaRef}
+        className="form-control rounded-4 px-3 py-2"
+        style={{
+          resize: 'none',
+          overflow: 'hidden',
+          maxHeight: '150px'
+        }}
         value={message}
         onChange={(e) => setMessage(e.target.value)}
-        onKeyPress={handleKeyPress}
+        onKeyDown={handleKeyDown}
         placeholder="Type your legal question..."
         disabled={isLoading}
-        rows="1"
+        rows={1}
       />
-      <button onClick={handleSend} disabled={isLoading || !message.trim()}>
-        Send
+
+      {/* SEND BUTTON */}
+      <button
+        className="btn btn-primary rounded-circle d-flex align-items-center justify-content-center"
+        style={{ width: '45px', height: '45px' }}
+        onClick={handleSend}
+        disabled={isLoading || !message.trim()}
+      >
+        {isLoading ? (
+          <span className="spinner-border spinner-border-sm" />
+        ) : (
+          '➤'
+        )}
       </button>
-      <button className="clear-btn" onClick={handleClear} disabled={isLoading}>
+
+      {/* CLEAR BUTTON */}
+      <button
+        className="btn btn-outline-danger btn-sm rounded-pill"
+        onClick={handleClear}
+        disabled={isLoading}
+      >
         Clear
       </button>
+
     </div>
   );
 }

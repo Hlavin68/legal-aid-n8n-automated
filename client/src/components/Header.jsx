@@ -1,11 +1,12 @@
 import React from 'react';
-import './Header.css';
 
 function Header() {
   return (
-    <header className="header">
-      <h2>⚖️ Kenyan Legal AI Assistant</h2>
-      <p>Get legal guidance for Kenyan law powered by AI</p>
+    <header className="bg-light py-4 mb-4 shadow-sm">
+      <div className="container">
+        <h2 className="fw-bold mb-1">⚖️ Kenyan Legal AI Assistant</h2>
+        <p className="text-muted mb-0">Get legal guidance for Kenyan law powered by AI</p>
+      </div>
     </header>
   );
 }
