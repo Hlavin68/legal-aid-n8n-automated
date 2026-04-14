@@ -60,7 +60,18 @@ export const caseAPI = {
 
 // Chat Endpoints
 export const chatAPI = {
-  sendMessage: (data) => apiClient.post('/chat/send', data)
+  sendMessage: (data) => apiClient.post('/chat/send', data),
+  
+  // Session management
+  startNewSession: (data) => apiClient.post('/chat/sessions/new', data),
+  getAllSessions: (archived = false) => apiClient.get('/chat/sessions', { params: { archived } }),
+  getSessionHistory: (sessionId) => apiClient.get(`/chat/sessions/${sessionId}`),
+  updateSession: (sessionId, data) => apiClient.put(`/chat/sessions/${sessionId}`, data),
+  deleteSession: (sessionId) => apiClient.delete(`/chat/sessions/${sessionId}`),
+  toggleArchiveSession: (sessionId) => apiClient.put(`/chat/sessions/${sessionId}/toggle-archive`),
+  
+  // Message management
+  deleteMessage: (sessionId, messageId) => apiClient.delete(`/chat/sessions/${sessionId}/messages/${messageId}`)
 };
 
 // Documents Endpoints

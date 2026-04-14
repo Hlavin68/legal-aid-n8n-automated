@@ -3,6 +3,7 @@ import { useAuth } from "../hooks/useAuth";
 import { chatAPI, handleAPIError } from "../services/api";
 import ChatContainer from "../components/ChatContainer";
 import InputBox from "../components/InputBox";
+import ChatHistorySidebar from "../components/ChatHistorySidebar";
 
 const API_URL =
   process.env.REACT_APP_API_URL || "http://localhost:5000";
@@ -22,7 +23,34 @@ export function ChatPage() {
   ]);
 
   const [loading, setLoading] = useState(false);
+  const [sessionId, setSessionId] = useState(null);
+  const [showHistory, setShowHistory] = useState(false);
+  const [sessionTitle, setSessionTitle] = useState("New Chat");
+  const [loadingSession, setLoadingSession] = useState(false);
   const chatEndRef = useRef(null);
+
+  // Create a new session on mount
+  useEffect(() => {
+    const initializeSession = async () => {
+      try {
+        setLoadingSession(true);
+        const response = await chatAPI.startNewSession({
+          title: `Chat - ${new Date().toLocaleDateString()}`
+        });
+        setSessionId(response.data.session.id);
+        setSessionTitle(response.data.session.title);
+      } catch (error) {
+        console.error("Failed to create session:", error);
+        // Continue without session id
+      } finally {
+        setLoadingSession(false);
+      }
+    };
+
+    if (user?.id && !sessionId) {
+      initializeSession();
+    }
+  }, [user?.id, sessionId]);
 
   /* AUTO SCROLL */
   useEffect(() => {
@@ -45,7 +73,8 @@ export function ChatPage() {
       const response = await chatAPI.sendMessage({
         message,
         role: user?.role || "client",
-        history: messages.filter((m) => m.id > 1).slice(-5)
+        history: messages.filter((m) => m.id > 1).slice(-5),
+        sessionId: sessionId
       });
 
       const botMessage = {
@@ -71,6 +100,68 @@ export function ChatPage() {
     }
   };
 
+  const handleNewChat = async () => {
+    try {
+      setLoadingSession(true);
+      const response = await chatAPI.startNewSession({
+        title: `Chat - ${new Date().toLocaleDateString()}`
+      });
+      setSessionId(response.data.session.id);
+      setSessionTitle(response.data.session.title);
+      setMessages([
+        {
+          id: 1,
+          role: "bot",
+          text:
+            user?.role === "lawyer"
+              ? "Welcome! I'm your legal analysis assistant. Ask about case strategy, drafting, research, and precedents."
+              : "Welcome! Ask about land, employment, family, criminal, or business law."
+        }
+      ]);
+    } catch (error) {
+      const apiErr = handleAPIError(error);
+      console.error("Failed to create new chat:", apiErr.message);
+    } finally {
+      setLoadingSession(false);
+    }
+  };
+
+  const handleLoadSession = async (sessionId) => {
+    try {
+      setLoadingSession(true);
+      const response = await chatAPI.getSessionHistory(sessionId);
+      const session = response.data.session;
+      
+      setSessionId(session.id);
+      setSessionTitle(session.title);
+      
+      // Convert stored messages to chat format
+      const formattedMessages = session.messages.map((msg, idx) => ({
+        id: idx,
+        role: msg.role,
+        text: msg.text
+      }));
+      
+      setMessages(
+        formattedMessages.length > 0
+          ? formattedMessages
+          : [
+              {
+                id: 1,
+                role: "bot",
+                text: "Chat history loaded. Continue your conversation."
+              }
+            ]
+      );
+      setShowHistory(false);
+    } catch (error) {
+      const apiErr = handleAPIError(error);
+      console.error("Failed to load session:", apiErr.message);
+    } finally {
+      setLoadingSession(false);
+    }
+  };
+
   const handleClear = () => {
     if (!window.confirm("Clear chat history?")) return;
 
@@ -84,14 +175,23 @@ export function ChatPage() {
   };
 
   return (
-    <div className="container-fluid vh-100 bg-light d-flex flex-column">
+    <div className="container-fluid vh-100 bg-light d-flex">
+
+      {/* SIDEBAR */}
+      {showHistory && (
+        <ChatHistorySidebar
+          onSelectSession={handleLoadSession}
+          onClose={() => setShowHistory(false)}
+          isLoading={loadingSession}
+        />
+      )}
 
       {/* CENTER CONTAINER */}
-      <div className="container flex-grow-1 d-flex flex-column">
+      <div className="flex-grow-1 d-flex flex-column">
 
         {/* HEADER */}
-        <div className="row justify-content-center mt-3">
-          <div className="col-12 col-lg-10">
+        <div className="row justify-content-center mt-3" style={{ paddingRight: showHistory ? "0" : "auto" }}>
+          <div className={`${showHistory ? "col-12 col-lg-9" : "col-12 col-lg-10"}`}>
 
             <div className="card shadow-sm border-0">
               <div className="card-body d-flex justify-content-between align-items-center">
@@ -99,18 +199,34 @@ export function ChatPage() {
                 <div>
                   <h5 className="mb-0">🏛️ Kenyan Legal AI Assistant</h5>
                   <small className="text-muted">
-                    {user?.role === "lawyer"
-                      ? "Professional legal analysis mode"
-                      : "Your personal legal guide"}
+                    {sessionTitle}
                   </small>
                 </div>
 
-                <button
-                  className="btn btn-sm btn-outline-danger"
-                  onClick={handleClear}
-                >
-                  Clear Chat
-                </button>
+                <div className="d-flex gap-2">
+                  <button
+                    className="btn btn-sm btn-outline-info"
+                    onClick={() => setShowHistory(!showHistory)}
+                    title="View chat history"
+                  >
+                    📋 History
+                  </button>
+                  <button
+                    className="btn btn-sm btn-outline-primary"
+                    onClick={handleNewChat}
+                    disabled={loadingSession}
+                    title="Start a new chat"
+                  >
+                    ➕ New Chat
+                  </button>
+                  <button
+                    className="btn btn-sm btn-outline-danger"
+                    onClick={handleClear}
+                    title="Clear current chat"
+                  >
+                    🗑️ Clear
+                  </button>
+                </div>
 
               </div>
             </div>
@@ -121,7 +237,7 @@ export function ChatPage() {
         {/* CHAT BOX */}
         <div className="row flex-grow-1 justify-content-center mt-3">
 
-          <div className="col-12 col-lg-10 d-flex">
+          <div className={`${showHistory ? "col-12 col-lg-9" : "col-12 col-lg-10"}`}>
 
             <div className="card shadow-sm border-0 flex-grow-1 d-flex flex-column position-relative">
 

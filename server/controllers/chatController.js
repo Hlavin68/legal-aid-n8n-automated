@@ -1,8 +1,11 @@
 import axios from 'axios';
+import ChatHistory from '../models/ChatHistory.js';
 
+// Send message and save to chat history
 export const sendMessage = async (req, res) => {
   try {
-    const { message, history } = req.body;
+    const { message, history, sessionId } = req.body;
+    const userId = req.user?._id;
     const role = req.user?.role || 'client';
 
     if (!message) {
@@ -46,10 +49,26 @@ export const sendMessage = async (req, res) => {
       botResponse = formatStructuredResponse(data, role);
     }
 
+    // Save to chat history if sessionId provided
+    if (sessionId && userId) {
+      try {
+        const session = await ChatHistory.findById(sessionId);
+        if (session && session.userId.toString() === userId.toString()) {
+          session.addMessage('user', message);
+          session.addMessage('bot', botResponse);
+          await session.save();
+        }
+      } catch (historyError) {
+        console.warn('Failed to save to chat history:', historyError.message);
+        // Continue even if history save fails
+      }
+    }
+
     res.json({ 
       success: true,
       response: botResponse,
-      userRole: role
+      userRole: role,
+      sessionId: sessionId || null
     });
 
   } catch (error) {
@@ -57,6 +76,275 @@ export const sendMessage = async (req, res) => {
     res.status(500).json({ 
       error: 'Failed to process message',
       details: error.message 
+    });
+  }
+};
+
+// Start a new chat session
+export const startNewSession = async (req, res) => {
+  try {
+    const userId = req.user?._id;
+    const userRole = req.user?.role || 'client';
+    const { title, caseReference } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const session = new ChatHistory({
+      userId,
+      userRole,
+      title: title || 'New Chat Session',
+      caseReference: caseReference || null
+    });
+
+    await session.save();
+
+    res.status(201).json({
+      success: true,
+      session: {
+        id: session._id,
+        title: session.title,
+        createdAt: session.createdAt,
+        messageCount: 0,
+        messages: []
+      }
+    });
+  } catch (error) {
+    console.error('Error creating chat session:', error.message);
+    res.status(500).json({
+      error: 'Failed to create chat session',
+      details: error.message
+    });
+  }
+};
+
+// Get all chat sessions for user
+export const getAllSessions = async (req, res) => {
+  try {
+    const userId = req.user?._id;
+    const { archived = false } = req.query;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const sessions = await ChatHistory.find({
+      userId,
+      isArchived: archived === 'true'
+    })
+      .select('_id title description userRole messageCount createdAt lastMessageAt tags caseReference')
+      .sort({ lastMessageAt: -1 })
+      .limit(50);
+
+    res.json({
+      success: true,
+      sessions,
+      total: sessions.length
+    });
+  } catch (error) {
+    console.error('Error fetching sessions:', error.message);
+    res.status(500).json({
+      error: 'Failed to fetch chat sessions',
+      details: error.message
+    });
+  }
+};
+
+// Get specific session with messages
+export const getSessionHistory = async (req, res) => {
+  try {
+    const userId = req.user?._id;
+    const { sessionId } = req.params;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const session = await ChatHistory.findById(sessionId);
+
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+
+    if (session.userId.toString() !== userId.toString()) {
+      return res.status(403).json({ error: 'Unauthorized access to this session' });
+    }
+
+    res.json({
+      success: true,
+      session: {
+        id: session._id,
+        title: session.title,
+        description: session.description,
+        messages: session.messages,
+        messageCount: session.messageCount,
+        userRole: session.userRole,
+        createdAt: session.createdAt,
+        lastMessageAt: session.lastMessageAt,
+        caseReference: session.caseReference,
+        tags: session.tags
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching session history:', error.message);
+    res.status(500).json({
+      error: 'Failed to fetch session history',
+      details: error.message
+    });
+  }
+};
+
+// Delete entire session
+export const deleteSession = async (req, res) => {
+  try {
+    const userId = req.user?._id;
+    const { sessionId } = req.params;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const session = await ChatHistory.findById(sessionId);
+
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+
+    if (session.userId.toString() !== userId.toString()) {
+      return res.status(403).json({ error: 'Unauthorized access to this session' });
+    }
+
+    await ChatHistory.findByIdAndDelete(sessionId);
+
+    res.json({
+      success: true,
+      message: 'Session deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting session:', error.message);
+    res.status(500).json({
+      error: 'Failed to delete session',
+      details: error.message
+    });
+  }
+};
+
+// Delete single message from session
+export const deleteMessage = async (req, res) => {
+  try {
+    const userId = req.user?._id;
+    const { sessionId, messageId } = req.params;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const session = await ChatHistory.findById(sessionId);
+
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+
+    if (session.userId.toString() !== userId.toString()) {
+      return res.status(403).json({ error: 'Unauthorized access to this session' });
+    }
+
+    session.messages = session.messages.filter(msg => msg._id.toString() !== messageId);
+    session.messageCount = session.messages.length;
+    await session.save();
+
+    res.json({
+      success: true,
+      message: 'Message deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting message:', error.message);
+    res.status(500).json({
+      error: 'Failed to delete message',
+      details: error.message
+    });
+  }
+};
+
+// Archive/Unarchive session
+export const toggleArchiveSession = async (req, res) => {
+  try {
+    const userId = req.user?._id;
+    const { sessionId } = req.params;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const session = await ChatHistory.findById(sessionId);
+
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+
+    if (session.userId.toString() !== userId.toString()) {
+      return res.status(403).json({ error: 'Unauthorized access to this session' });
+    }
+
+    session.isArchived = !session.isArchived;
+    await session.save();
+
+    res.json({
+      success: true,
+      isArchived: session.isArchived,
+      message: `Session ${session.isArchived ? 'archived' : 'unarchived'}`
+    });
+  } catch (error) {
+    console.error('Error toggling archive:', error.message);
+    res.status(500).json({
+      error: 'Failed to toggle archive',
+      details: error.message
+    });
+  }
+};
+
+// Update session title and description
+export const updateSession = async (req, res) => {
+  try {
+    const userId = req.user?._id;
+    const { sessionId } = req.params;
+    const { title, description, tags } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const session = await ChatHistory.findById(sessionId);
+
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+
+    if (session.userId.toString() !== userId.toString()) {
+      return res.status(403).json({ error: 'Unauthorized access to this session' });
+    }
+
+    if (title) session.title = title;
+    if (description !== undefined) session.description = description;
+    if (tags) session.tags = tags;
+
+    await session.save();
+
+    res.json({
+      success: true,
+      session: {
+        id: session._id,
+        title: session.title,
+        description: session.description,
+        tags: session.tags
+      }
+    });
+  } catch (error) {
+    console.error('Error updating session:', error.message);
+    res.status(500).json({
+      error: 'Failed to update session',
+      details: error.message
     });
   }
 };
