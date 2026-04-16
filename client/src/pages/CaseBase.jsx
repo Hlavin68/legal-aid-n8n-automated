@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Badge } from "../components/ui";
 import { useAuth } from "../hooks/useAuth";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
 
 export function CaseBase() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
+  const navigate = useNavigate();
 
   const [cases, setCases] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -185,6 +186,16 @@ export function CaseBase() {
                       </div>
                     )}
 
+                  </div>
+
+                  {/* VIEW DETAILS BUTTON */}
+                  <div className="mt-3">
+                    <button
+                      className="btn btn-primary btn-sm"
+                      onClick={() => navigate(`${user.role === 'client' ? '/client' : '/lawyer'}/case-base/${caseItem._id}`)}
+                    >
+                      View Details
+                    </button>
                   </div>
 
                 </div>

@@ -313,6 +313,12 @@ export const changeStatus = async (req, res) => {
     caseData.status = newStatus;
     caseData.statusChangedAt = new Date();
     caseData.statusChangedBy = userId;
+
+    // Automatically publish to case base when case is closed
+    if (newStatus === CASE_STATUSES.CLOSED) {
+      caseData.caseBase = true;
+    }
+
     await caseData.save();
 
     // Log status change
@@ -694,6 +700,32 @@ export const getCaseBase = async (req, res) => {
     res.json({
       success: true,
       cases
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+/**
+ * Get a single case from case base (read-only, available to all authenticated users)
+ */
+export const getCaseBaseById = async (req, res) => {
+  try {
+    const { caseId } = req.params;
+
+    const caseData = await Case.findOne({ _id: caseId, caseBase: true, status: CASE_STATUSES.CLOSED })
+      .populate('clientId', 'name')
+      .populate('lawyerId', 'name firm')
+      .populate('caseCreatedBy', 'name firm')
+      .populate('notes.author', 'name');
+
+    if (!caseData) {
+      return res.status(404).json({ error: 'Case not found in case base' });
+    }
+
+    res.json({
+      success: true,
+      case: caseData
     });
   } catch (error) {
     res.status(500).json({ error: error.message });

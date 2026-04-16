@@ -14,6 +14,7 @@ import {
   addDeadline,
   deleteDeadline,
   getCaseBase,
+  getCaseBaseById,
   getCaseHistory,
   publishToCaseBase
 } from '../controllers/caseController.js';
@@ -29,6 +30,7 @@ router.get('/', getMyCases);
 
 // Case base (published/completed cases) - available to all
 router.get('/base/list', getCaseBase);
+router.get('/base/:caseId', getCaseBaseById);
 
 // Get single case with audit trail
 router.get('/:caseId', getCaseById);

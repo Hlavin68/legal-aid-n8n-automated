@@ -12,6 +12,7 @@ import ChatPage from './pages/ChatPage';
 import CaseDetails from './pages/CaseDetails';
 import DocumentGenerator from './pages/DocumentGenerator';
 import CaseBase from './pages/CaseBase';
+import CaseBaseDetails from './pages/CaseBaseDetails';
 
 function App() {
   return (
@@ -75,6 +76,14 @@ function App() {
                             </ProtectedRoute>
                           }
                         />
+                        <Route
+                          path="/client/case-base/:caseId"
+                          element={
+                            <ProtectedRoute requiredRole="client">
+                              <CaseBaseDetails />
+                            </ProtectedRoute>
+                          }
+                        />
 
                         {/* LAWYER ROUTES */}
                         <Route
@@ -106,6 +115,14 @@ function App() {
                           element={
                             <ProtectedRoute requiredRole="lawyer">
                               <CaseBase />
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="/lawyer/case-base/:caseId"
+                          element={
+                            <ProtectedRoute requiredRole="lawyer">
+                              <CaseBaseDetails />
                             </ProtectedRoute>
                           }
                         />

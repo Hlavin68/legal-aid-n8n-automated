@@ -4,8 +4,8 @@ import ChatHistory from '../models/ChatHistory.js';
 // Send message and save to chat history
 export const sendMessage = async (req, res) => {
   try {
-    const { message, history, sessionId } = req.body;
-    const userId = req.user?._id;
+    let { message, sessionId } = req.body;
+    const userId = req.user?.id;
     const role = req.user?.role || 'client';
 
     if (!message) {
@@ -13,69 +13,85 @@ export const sendMessage = async (req, res) => {
     }
 
     const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL;
-    
+
     if (!N8N_WEBHOOK_URL) {
-      return res.status(500).json({ 
-        error: 'N8N_WEBHOOK_URL not configured',
-        hint: 'Check server/.env file' 
+      return res.status(500).json({
+        error: 'N8N_WEBHOOK_URL not configured'
       });
     }
 
-    // Add role context to the message
-    const enrichedMessage = role === 'lawyer' 
-      ? `[LAWYER REQUEST] ${message}` 
-      : `[CLIENT REQUEST] ${message}`;
+    // 1. Auto-create session if missing
+    if (!sessionId) {
+      const newSession = new ChatHistory({
+        userId,
+        userRole: role,
+        title: 'New Chat Session'
+      });
 
-    // Call n8n webhook
+      await newSession.save();
+      sessionId = newSession._id.toString();
+    }
+
+    // 2. Ensure session belongs to user
+    const session = await ChatHistory.findById(sessionId);
+
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+
+    if (session.userId.toString() !== userId.toString()) {
+      return res.status(403).json({ error: 'Unauthorized session access' });
+    }
+
+    // 3. Clean message
+    const cleanMessage = String(message)
+      .replace(/^\[(CLIENT|LAWYER) REQUEST\]\s*/i, "")
+      .trim();
+
+    const enrichedMessage =
+      role === 'lawyer'
+        ? `[LAWYER REQUEST] ${cleanMessage}`
+        : `[CLIENT REQUEST] ${cleanMessage}`;
+
+    // 4. Call n8n WITH VALID sessionId
     const response = await axios.post(N8N_WEBHOOK_URL, {
       message: enrichedMessage,
-      history: history || [],
+      sessionId, // ✅ ALWAYS valid now
+      userId,
       userRole: role
     });
 
     const data = response.data;
 
-    // Extract response from different possible formats
-    let botResponse = 
-      data.response || 
-      data.output || 
-      data.message || 
-      data.text || 
-      data.content || 
+    let botResponse =
+      data.response ||
+      data.output ||
+      data.message ||
+      data.text ||
+      data.content ||
       JSON.stringify(data);
 
-    // Handle structured responses
     if (data['1. Situation Summary']) {
       botResponse = formatStructuredResponse(data, role);
     }
 
-    // Save to chat history if sessionId provided
-    if (sessionId && userId) {
-      try {
-        const session = await ChatHistory.findById(sessionId);
-        if (session && session.userId.toString() === userId.toString()) {
-          session.addMessage('user', message);
-          session.addMessage('bot', botResponse);
-          await session.save();
-        }
-      } catch (historyError) {
-        console.warn('Failed to save to chat history:', historyError.message);
-        // Continue even if history save fails
-      }
-    }
+    // 5. Save messages properly
+    session.addMessage('user', cleanMessage);
+    session.addMessage('bot', botResponse);
+    await session.save();
 
-    res.json({ 
+    // 6. Return consistent response
+    res.json({
       success: true,
       response: botResponse,
-      userRole: role,
-      sessionId: sessionId || null
+      sessionId
     });
 
   } catch (error) {
     console.error('Error calling n8n webhook:', error.message);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to process message',
-      details: error.message 
+      details: error.message
     });
   }
 };
@@ -83,7 +99,7 @@ export const sendMessage = async (req, res) => {
 // Start a new chat session
 export const startNewSession = async (req, res) => {
   try {
-    const userId = req.user?._id;
+    const userId = req.user?.id;
     const userRole = req.user?.role || 'client';
     const { title, caseReference } = req.body;
 
@@ -122,7 +138,7 @@ export const startNewSession = async (req, res) => {
 // Get all chat sessions for user
 export const getAllSessions = async (req, res) => {
   try {
-    const userId = req.user?._id;
+    const userId = req.user?.id;
     const { archived = false } = req.query;
 
     if (!userId) {
@@ -154,7 +170,7 @@ export const getAllSessions = async (req, res) => {
 // Get specific session with messages
 export const getSessionHistory = async (req, res) => {
   try {
-    const userId = req.user?._id;
+    const userId = req.user?.id;
     const { sessionId } = req.params;
 
     if (!userId) {
@@ -198,7 +214,7 @@ export const getSessionHistory = async (req, res) => {
 // Delete entire session
 export const deleteSession = async (req, res) => {
   try {
-    const userId = req.user?._id;
+    const userId = req.user?.id;
     const { sessionId } = req.params;
 
     if (!userId) {
@@ -233,7 +249,7 @@ export const deleteSession = async (req, res) => {
 // Delete single message from session
 export const deleteMessage = async (req, res) => {
   try {
-    const userId = req.user?._id;
+    const userId = req.user?.id;
     const { sessionId, messageId } = req.params;
 
     if (!userId) {
@@ -270,7 +286,7 @@ export const deleteMessage = async (req, res) => {
 // Archive/Unarchive session
 export const toggleArchiveSession = async (req, res) => {
   try {
-    const userId = req.user?._id;
+    const userId = req.user?.id;
     const { sessionId } = req.params;
 
     if (!userId) {
@@ -307,7 +323,7 @@ export const toggleArchiveSession = async (req, res) => {
 // Update session title and description
 export const updateSession = async (req, res) => {
   try {
-    const userId = req.user?._id;
+    const userId = req.user?.id;
     const { sessionId } = req.params;
     const { title, description, tags } = req.body;
 
