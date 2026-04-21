@@ -99,59 +99,111 @@ export const getCaseById = async (req, res) => {
  */
 export const createCase = async (req, res) => {
   try {
-    const userId = req.user.id;
-    const userRole = req.user.role;
+    const userId = req.user?.id;
+    const userRole = req.user?.role;
 
-    // Only lawyers can create cases
-    if (userRole !== 'lawyer') {
-      return res.status(403).json({ error: 'Only lawyers can create cases' });
+    // 🔐 Auth check (prevents req.user crash)
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        error: "Unauthorized - user not found"
+      });
     }
 
-    // Check if PDF file exists
+    // 👮 Role check
+    if (userRole !== "lawyer") {
+      return res.status(403).json({
+        success: false,
+        error: "Only lawyers can create cases"
+      });
+    }
+
+    // 📄 File check (CRITICAL FIX)
     if (!req.file) {
-      return res.status(400).json({ error: 'PDF file is required' });
+      return res.status(400).json({
+        success: false,
+        error: "PDF file is required"
+      });
     }
 
-    if (req.file.mimetype !== 'application/pdf') {
-      return res.status(400).json({ error: 'Only PDF files are allowed' });
+    // 📄 Validate file type
+    if (req.file.mimetype !== "application/pdf") {
+      return res.status(400).json({
+        success: false,
+        error: "Only PDF files are allowed"
+      });
     }
 
-    const { title, category, brief, description, year, court, judge, citation, keywords } = req.body;
+    const {
+      title,
+      category,
+      brief,
+      description,
+      year,
+      court,
+      judge,
+      citation,
+      keywords
+    } = req.body;
 
-    // Validation
+    // 🧾 Validation
     if (!title || !category || !brief) {
-      return res.status(400).json({ error: 'Title, category, and brief are required' });
+      return res.status(400).json({
+        success: false,
+        error: "Title, category, and brief are required"
+      });
     }
 
-    // Create new case
+    // 🔍 DEBUG (remove in production later)
+    console.log("USER:", req.user);
+    console.log("FILE:", req.file);
+    console.log("BODY:", req.body);
+
+    // 🧠 Keywords handling
+    let parsedKeywords = [];
+    if (keywords) {
+      parsedKeywords =
+        typeof keywords === "string"
+          ? keywords.split(",").map((k) => k.trim())
+          : keywords;
+    }
+
+    // 📦 Create case
     const newCase = new CaseBase({
       title,
       category,
       brief,
-      description: description || '',
+      description: description || "",
       year: year ? parseInt(year) : new Date().getFullYear(),
-      court: court || '',
-      judge: judge || '',
-      citation: citation || '',
-      keywords: keywords ? (typeof keywords === 'string' ? keywords.split(',').map(k => k.trim()) : keywords) : [],
-      pdfUrl: req.file.path, // multer stores the path
+      court: court || "",
+      judge: judge || "",
+      citation: citation || "",
+      keywords: parsedKeywords,
+
+      // 🚨 SAFE FILE HANDLING (FIX FOR 500 ERROR)
+      pdfUrl: `/uploads/${req.file.filename}`,
       createdBy: userId,
       isPublished: true
     });
 
     await newCase.save();
 
-    // Populate creator info
-    await newCase.populate('createdBy', 'name firm licenseNumber');
+    // 👤 Populate creator
+    await newCase.populate("createdBy", "name firm licenseNumber");
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
-      message: 'Case created successfully',
+      message: "Case created successfully",
       case: newCase
     });
+
   } catch (error) {
-    console.error('Error creating case:', error);
-    res.status(500).json({ error: error.message });
+    console.error("CREATE CASE ERROR:", error);
+
+    return res.status(500).json({
+      success: false,
+      error: error.message || "Internal server error"
+    });
   }
 };
 

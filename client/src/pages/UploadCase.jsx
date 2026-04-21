@@ -163,7 +163,7 @@ export default function UploadCase() {
       uploadData.append("pdf", pdfFile);
 
       const res = await axios.post(
-        `${API_URL}/case-base/create`,
+        `${API_URL}/case-base/cases`,
         uploadData,
         {
           headers: {

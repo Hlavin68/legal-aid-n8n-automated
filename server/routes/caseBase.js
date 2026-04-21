@@ -33,12 +33,12 @@ router.get('/list', getAllCases);
 router.get('/:caseId', getCaseById);
 
 // Create new case (requires PDF upload)
-router.post('/create', authorize(['lawyer']), pdfUpload.single('pdf'), createCase);
+router.post('/cases', authorize(['lawyer']), pdfUpload.single('pdf'), createCase);
 
 // Update case details
-router.put('/:caseId', authorize(['lawyer']), updateCase);
+router.put('/cases/:caseId', authorize(['lawyer']), updateCase);
 
 // Delete case
-router.delete('/:caseId', authorize(['lawyer']), deleteCase);
+router.delete('/cases/:caseId', authorize(['lawyer']), deleteCase);
 
 export default router;

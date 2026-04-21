@@ -10,6 +10,7 @@ import caseRoutes from './routes/cases.js';
 import documentRoutes from './routes/documents.js';
 import caseBaseRoutes from './routes/caseBase.js';
 
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, '.env') });
 
@@ -19,7 +20,8 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.static('uploads'));
+
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 // MongoDB Connection
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/legal-aid';
