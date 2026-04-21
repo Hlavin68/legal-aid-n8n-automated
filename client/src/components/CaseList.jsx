@@ -144,7 +144,7 @@ const CaseList = ({ onSelectCase }) => {
           <option value="created">Oldest</option>
         </select>
 
-        <button onClick={fetchCases}>🔄 Refresh</button>
+        <button onClick={fetchCases}> Refresh</button>
       </div>
 
       {/* Cases */}
@@ -173,10 +173,10 @@ const CaseList = ({ onSelectCase }) => {
                 <p>{c.description?.slice(0, 100) || 'No description'}...</p>
 
                 <div style={{ background: urgency.color, color: '#fff', padding: 5 }}>
-                  ⏰ {urgency.label}
+                  {urgency.label}
                 </div>
 
-                <small>📅 {new Date(c.createdAt).toLocaleDateString()}</small>
+                <small>{new Date(c.createdAt).toLocaleDateString()}</small>
               </div>
             );
           })

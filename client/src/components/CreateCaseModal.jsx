@@ -125,7 +125,7 @@ export function CreateCaseModal({ isOpen, onClose, onCreateCase }) {
       <form onSubmit={handleSubmit} className="create-case-form">
         {apiError && (
           <div className="api-error-message">
-            ❌ Error: {apiError}
+           Error: {apiError}
           </div>
         )}
 

@@ -5,25 +5,71 @@ import { useNavigate } from "react-router-dom";
 
 const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
 
+/**
+ * CaseBase Page
+ * Displays a library of legal precedent cases
+ * Available to: Clients (read-only) and Lawyers (read + upload)
+ */
 export function CaseBase() {
   const { token, user } = useAuth();
   const navigate = useNavigate();
 
   const [cases, setCases] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState("");
+  const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [categories, setCategories] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
+  // Fetch categories
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await axios.get(`${API_URL}/case-base/categories`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.data.success) {
+          setCategories(res.data.categories);
+        }
+      } catch (err) {
+        console.error("Error fetching categories:", err);
+        // Fallback categories
+        setCategories([
+          "Property Law",
+          "Employment Law",
+          "Family Law",
+          "Criminal Law",
+          "Business & Contracts",
+          "Corporate Law",
+          "Immigration",
+          "Intellectual Property",
+          "Constitutional Law",
+          "Environmental Law",
+          "Tax Law",
+          "Other"
+        ]);
+      }
+    };
+
+    fetchCategories();
+  }, [token]);
+
+  // Fetch cases with search and filters
   const fetchCases = useCallback(async () => {
     try {
       setLoading(true);
+      setError(null);
 
       const params = new URLSearchParams();
-      if (selectedCategory) params.append("category", selectedCategory);
       if (searchTerm) params.append("search", searchTerm);
+      if (selectedCategory) params.append("category", selectedCategory);
+      params.append("page", currentPage);
+      params.append("limit", 12);
 
       const res = await axios.get(
-        `${API_URL}/cases/base/list?${params}`,
+        `${API_URL}/case-base/list?${params}`,
         {
           headers: { Authorization: `Bearer ${token}` }
         }
@@ -31,63 +77,95 @@ export function CaseBase() {
 
       if (res.data.success) {
         setCases(res.data.cases);
+        if (res.data.pagination) {
+          setTotalPages(res.data.pagination.totalPages);
+        }
       }
     } catch (err) {
       console.error("Error fetching cases:", err);
+      setError("Failed to load cases. Please try again.");
     } finally {
       setLoading(false);
     }
-  }, [selectedCategory, searchTerm, token]);
+  }, [searchTerm, selectedCategory, currentPage, token]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedCategory]);
 
   useEffect(() => {
     fetchCases();
   }, [fetchCases]);
 
-  const categories = [
-    "Property Law",
-    "Employment Law",
-    "Family Law",
-    "Criminal Law",
-    "Business & Contracts",
-    "Corporate Law",
-    "Immigration",
-    "Intellectual Property"
-  ];
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+  };
+
+  const handleCategoryChange = (e) => {
+    setSelectedCategory(e.target.value);
+  };
+
+  const handleClearFilters = () => {
+    setSearchTerm("");
+    setSelectedCategory("");
+    setCurrentPage(1);
+  };
 
   return (
     <div className="container py-4">
-
       {/* HEADER */}
-      <div className="text-center mb-4">
-        <h1 className="fw-bold">📚 Case Library</h1>
-        <p className="text-muted">
-          Learn from completed cases in Kenya legal system
-        </p>
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <h1 className="fw-bold mb-1">📚 Legal Case Library</h1>
+          <p className="text-muted">
+            Browse legal precedent cases and judgments from Kenya's legal system
+          </p>
+        </div>
+        {user?.role === "lawyer" && (
+          <button
+            className="btn btn-primary"
+            onClick={() => navigate("/lawyer/upload-case")}
+          >
+            ➕ Upload New Case
+          </button>
+        )}
       </div>
 
-      {/* FILTERS */}
+      {/* ERROR ALERT */}
+      {error && (
+        <div className="alert alert-danger alert-dismissible fade show" role="alert">
+          {error}
+          <button
+            type="button"
+            className="btn-close"
+            onClick={() => setError(null)}
+          ></button>
+        </div>
+      )}
+
+      {/* FILTERS SECTION */}
       <div className="card shadow-sm border-0 mb-4">
         <div className="card-body">
-
           <div className="row g-3">
-
             {/* SEARCH */}
             <div className="col-md-6">
+              <label className="form-label fw-bold">Search Cases</label>
               <input
                 type="text"
                 className="form-control"
-                placeholder="Search cases..."
+                placeholder="Search by title, keywords, court, or judge..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={handleSearchChange}
               />
             </div>
 
-            {/* CATEGORY */}
+            {/* CATEGORY FILTER */}
             <div className="col-md-6">
+              <label className="form-label fw-bold">Category</label>
               <select
                 className="form-select"
                 value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
+                onChange={handleCategoryChange}
               >
                 <option value="">All Categories</option>
                 {categories.map((cat) => (
@@ -97,116 +175,171 @@ export function CaseBase() {
                 ))}
               </select>
             </div>
-
           </div>
 
+          {/* CLEAR FILTERS */}
+          {(searchTerm || selectedCategory) && (
+            <div className="mt-3">
+              <button
+                className="btn btn-sm btn-outline-secondary"
+                onClick={handleClearFilters}
+              >
+                Clear Filters
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
       {/* CONTENT */}
       {loading ? (
         <div className="text-center py-5">
-          <div className="spinner-border text-primary" />
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
           <p className="mt-3 text-muted">Loading cases...</p>
         </div>
       ) : cases.length === 0 ? (
         <div className="text-center py-5">
-          <div style={{ fontSize: "3rem" }}>📋</div>
-          <h4 className="mt-2">No cases found</h4>
-          <p className="text-muted">
-            Try adjusting your filters or search term
+          <h4 className="mb-2">📋 No Cases Found</h4>
+          <p className="text-muted mb-3">
+            {searchTerm || selectedCategory
+              ? "Try adjusting your search or filters"
+              : "No cases available in the library"}
           </p>
+          {(searchTerm || selectedCategory) && (
+            <button
+              className="btn btn-outline-primary btn-sm"
+              onClick={handleClearFilters}
+            >
+              Clear Filters
+            </button>
+          )}
         </div>
       ) : (
-        <div className="row g-4">
-
-          {cases.map((caseItem) => (
-            <div className="col-lg-6" key={caseItem._id}>
-              <div className="card shadow-sm border-0 h-100">
-
-                <div className="card-body">
-
-                  {/* HEADER */}
-                  <div className="d-flex justify-content-between align-items-start mb-2">
-
-                    <div>
-                      <h5 className="mb-1">{caseItem.title}</h5>
-                      <span className="badge bg-secondary">
+        <>
+          {/* CASES GRID */}
+          <div className="row g-4 mb-4">
+            {cases.map((caseItem) => (
+              <div className="col-lg-4 col-md-6" key={caseItem._id}>
+                <div className="card shadow-sm border-0 h-100 d-flex flex-column">
+                  <div className="card-body d-flex flex-column">
+                    {/* CATEGORY BADGE */}
+                    <div className="mb-2">
+                      <span className="badge bg-secondary me-2">
                         {caseItem.category}
+                      </span>
+                      <span className="badge bg-light text-dark">
+                        {caseItem.year}
                       </span>
                     </div>
 
-                    <span className="badge bg-success">
-                      Closed
-                    </span>
+                    {/* TITLE */}
+                    <h5 className="card-title fw-bold mb-2 flex-grow-1">
+                      {caseItem.title}
+                    </h5>
 
-                  </div>
+                    {/* BRIEF */}
+                    <p className="card-text text-muted small mb-3">
+                      {caseItem.brief}
+                    </p>
 
-                  {/* DESCRIPTION */}
-                  <p className="text-muted small">
-                    {caseItem.description}
-                  </p>
-
-                  {/* META */}
-                  <div className="d-flex flex-wrap gap-3 text-muted small mb-2">
-
-                    <span>
-                      📅{" "}
-                      {new Date(caseItem.createdAt).toLocaleDateString("en-KE")}
-                    </span>
-
-                    {caseItem.lawyerId && (
-                      <span>👨‍⚖️ {caseItem.lawyerId.name}</span>
-                    )}
-
-                  </div>
-
-                  {/* SUMMARY */}
-                  {caseItem.summary && (
-                    <div className="mb-3 p-2 bg-light rounded">
-                      <h6 className="mb-1">Summary</h6>
-                      <p className="mb-0 small">
-                        {caseItem.summary}
-                      </p>
+                    {/* METADATA */}
+                    <div className="small text-muted mb-3">
+                      {caseItem.court && (
+                        <div className="mb-1">
+                          <strong>Court:</strong> {caseItem.court}
+                        </div>
+                      )}
+                      {caseItem.judge && (
+                        <div className="mb-1">
+                          <strong>Judge:</strong> {caseItem.judge}
+                        </div>
+                      )}
+                      {caseItem.citation && (
+                        <div className="mb-1">
+                          <strong>Citation:</strong> {caseItem.citation}
+                        </div>
+                      )}
+                      {caseItem.createdBy && (
+                        <div>
+                          <strong>By:</strong> {caseItem.createdBy.name}
+                        </div>
+                      )}
+                      <div className="mt-1 text-muted">
+                        👁️ {caseItem.views} views
+                      </div>
                     </div>
-                  )}
 
-                  {/* DETAILS */}
-                  <div className="small text-muted">
-
-                    {caseItem.documents?.length > 0 && (
-                      <div>
-                        📄 Documents: {caseItem.documents.length}
-                      </div>
-                    )}
-
-                    {caseItem.notes?.length > 0 && (
-                      <div>
-                        📝 Notes: {caseItem.notes.length}
-                      </div>
-                    )}
-
-                  </div>
-
-                  {/* VIEW DETAILS BUTTON */}
-                  <div className="mt-3">
+                    {/* VIEW DETAILS BUTTON */}
                     <button
-                      className="btn btn-primary btn-sm"
-                      onClick={() => navigate(`${user.role === 'client' ? '/client' : '/lawyer'}/case-base/${caseItem._id}`)}
+                      className="btn btn-primary btn-sm mt-auto"
+                      onClick={() =>
+                        navigate(
+                          `/${user?.role || "client"}/case-base/${caseItem._id}`
+                        )
+                      }
                     >
-                      View Details
+                      View Full Case →
                     </button>
                   </div>
-
                 </div>
-
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
 
-        </div>
+          {/* PAGINATION */}
+          {totalPages > 1 && (
+            <nav aria-label="Page navigation" className="d-flex justify-content-center">
+              <ul className="pagination">
+                <li
+                  className={`page-item ${currentPage === 1 ? "disabled" : ""}`}
+                >
+                  <button
+                    className="page-link"
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    ← Previous
+                  </button>
+                </li>
+
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                  (page) => (
+                    <li
+                      key={page}
+                      className={`page-item ${currentPage === page ? "active" : ""}`}
+                    >
+                      <button
+                        className="page-link"
+                        onClick={() => setCurrentPage(page)}
+                      >
+                        {page}
+                      </button>
+                    </li>
+                  )
+                )}
+
+                <li
+                  className={`page-item ${
+                    currentPage === totalPages ? "disabled" : ""
+                  }`}
+                >
+                  <button
+                    className="page-link"
+                    onClick={() =>
+                      setCurrentPage(prev => Math.min(totalPages, prev + 1))
+                    }
+                    disabled={currentPage === totalPages}
+                  >
+                    Next →
+                  </button>
+                </li>
+              </ul>
+            </nav>
+          )}
+        </>
       )}
-
     </div>
   );
 }

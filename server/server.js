@@ -8,6 +8,7 @@ import chatRoutes from './routes/chat.js';
 import authRoutes from './routes/auth.js';
 import caseRoutes from './routes/cases.js';
 import documentRoutes from './routes/documents.js';
+import caseBaseRoutes from './routes/caseBase.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, '.env') });
@@ -34,6 +35,7 @@ mongoose
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/cases', caseRoutes);
+app.use('/api/case-base', caseBaseRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/chat', chatRoutes);
 

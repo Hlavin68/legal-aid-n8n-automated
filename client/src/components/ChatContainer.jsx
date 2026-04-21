@@ -7,7 +7,7 @@ const ChatContainer = forwardRef(({ messages }, ref) => {
 
       {/* Welcome */}
       <div className="alert alert-primary m-3 shadow-sm">
-        <h6 className="fw-bold mb-1">🏛️ Kenyan Legal AI Assistant</h6>
+        <h6 className="fw-bold mb-1">Kenyan Legal AI Assistant</h6>
         <p className="mb-1 small">
           Get guidance on Kenyan law instantly.
         </p>

@@ -93,9 +93,9 @@ function CaseDashboard() {
       <div className="dashboard-header">
         <div className="header-content">
           <h1>
-            {isClient && '👁️ My Cases'}
+            {isClient && ' My Cases'}
             {isLawyer && '⚖️ Case Management'}
-            {isParalegal && '📋 Case Dashboard'}
+            {isParalegal && ' Case Dashboard'}
           </h1>
           <p className="header-subtitle">
             {isClient && 'View and track your legal cases'}
@@ -110,13 +110,13 @@ function CaseDashboard() {
                 className="btn btn-primary"
                 onClick={() => navigate('/lawyer/cases')}
               >
-                ➕ Create Case
+                Create Case
               </button>
               <button 
                 className="btn btn-secondary"
                 onClick={() => navigate('/chat')}
               >
-                🤖 Ask AI
+               Ask AI
               </button>
             </>
           )}
@@ -134,7 +134,6 @@ function CaseDashboard() {
       {/* Alert Banner - Critical Issues */}
       {(stats.overdue > 0 || stats.urgent > 0) && (
         <div className="alert-banner alert-warning">
-          <span className="alert-icon">⚠️</span>
           <div className="alert-content">
             {stats.overdue > 0 && <strong>{stats.overdue} overdue deadline(s)</strong>}
             {stats.overdue > 0 && stats.urgent > 0 && <span className="alert-separator">•</span>}
@@ -153,7 +152,6 @@ function CaseDashboard() {
       <div className="stats-grid">
         {/* Total Cases Card */}
         <div className="stat-card">
-          <div className="stat-icon">📊</div>
           <div className="stat-content">
             <div className="stat-value">{stats.total}</div>
             <div className="stat-label">Total Cases</div>
@@ -162,7 +160,6 @@ function CaseDashboard() {
 
         {/* Active Cases Card */}
         <div className="stat-card">
-          <div className="stat-icon">🔄</div>
           <div className="stat-content">
             <div className="stat-value">{stats.active}</div>
             <div className="stat-label">Active Cases</div>
@@ -172,7 +169,6 @@ function CaseDashboard() {
         {/* Urgent Cases Card */}
         {(stats.urgent > 0 || isLegal) && (
           <div className={`stat-card ${stats.urgent > 0 ? 'stat-urgent' : ''}`}>
-            <div className="stat-icon">🔔</div>
             <div className="stat-content">
               <div className="stat-value">{stats.urgent}</div>
               <div className="stat-label">Urgent Actions</div>
@@ -183,7 +179,6 @@ function CaseDashboard() {
         {/* Overdue Card */}
         {(stats.overdue > 0 || isLegal) && (
           <div className={`stat-card ${stats.overdue > 0 ? 'stat-overdue' : ''}`}>
-            <div className="stat-icon">⏰</div>
             <div className="stat-content">
               <div className="stat-value">{stats.overdue}</div>
               <div className="stat-label">Overdue {isClient ? 'Deadlines' : 'Actions'}</div>
@@ -193,7 +188,6 @@ function CaseDashboard() {
 
         {/* Closed Cases Card */}
         <div className="stat-card">
-          <div className="stat-icon">✅</div>
           <div className="stat-content">
             <div className="stat-value">{stats.byStatus.closed}</div>
             <div className="stat-label">Closed Cases</div>
@@ -238,7 +232,6 @@ function CaseDashboard() {
 
         {cases.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-icon">📁</div>
             <h3>No cases yet</h3>
             <p>
               {isClient && 'Your cases will appear here once your lawyer creates them'}

@@ -172,14 +172,14 @@ const CaseDetails = ({ caseId, onBack }) => {
       {/* Client Badge */}
       {isClient && (
         <div className="alert alert-info mb-4">
-          <strong>📋 View-Only Access</strong> — You can see case details, documents, deadlines, and hearing information
+          <strong>View-Only Access</strong> — You can see case details, documents, deadlines, and hearing information
         </div>
       )}
 
       {/* Case Closed Warning */}
       {isCaseClosed && canTransitionState && (
         <div className="alert alert-warning alert-dismissible fade show mb-4" role="alert">
-          <strong>⚠️ Case Closed</strong> — This case is closed and cannot be modified. No further state transitions are allowed.
+          <strong> Case Closed</strong> — This case is closed and cannot be modified. No further state transitions are allowed.
           <button type="button" className="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
       )}
@@ -268,7 +268,6 @@ const CaseDetails = ({ caseId, onBack }) => {
                     <h5 className="card-title">Upload Documents</h5>
                     {!isClient ? (
                       <div className="border-2 border-dashed p-4 text-center rounded bg-light">
-                        <div className="fs-3 mb-2">📤</div>
                         <p className="mb-1">Drop files here or click to browse</p>
                         <small className="text-muted">PDF, DOCX, JPG — up to 20 MB each</small>
                       </div>
@@ -431,7 +430,7 @@ const CaseDetails = ({ caseId, onBack }) => {
                 {canTransitionState && (
                   <div className="card mb-4 shadow-sm border-warning">
                     <div className="card-body">
-                      <h5 className="card-title">⚖️ Workflow Actions</h5>
+                      <h5 className="card-title">Workflow Actions</h5>
                       
                       {isCaseClosed ? (
                         <div className="alert alert-danger mb-0">
@@ -502,7 +501,7 @@ const CaseDetails = ({ caseId, onBack }) => {
                 {/* Hearing Dates Section */}
                 <div className="card shadow-sm">
                   <div className="card-body">
-                    <h5 className="card-title">📅 Hearing Dates</h5>
+                    <h5 className="card-title"> Hearing Dates</h5>
                     {caseData.hearingDates && caseData.hearingDates.length > 0 ? (
                       <div className="list-group list-group-flush">
                         {caseData.hearingDates.map(hearing => (

@@ -51,7 +51,7 @@ function Navigation() {
                 to={dashboardPath}
                 className={`nav-link ${isActive(dashboardPath) ? 'active' : ''}`}
               >
-                📋 Dashboard
+                 Dashboard
               </Link>
             </li>
 
@@ -60,7 +60,7 @@ function Navigation() {
                 to={chatPath}
                 className={`nav-link ${isActive(chatPath) ? 'active' : ''}`}
               >
-                🤖 Chat
+                 Chat
               </Link>
             </li>
 
@@ -70,7 +70,7 @@ function Navigation() {
                   to={documentsPath}
                   className={`nav-link ${isActive(documentsPath) ? 'active' : ''}`}
                 >
-                  📄 Documents
+                   Documents
                 </Link>
               </li>
             )}
@@ -80,7 +80,7 @@ function Navigation() {
                 to={caseBasePath}
                 className={`nav-link ${isActive(caseBasePath) ? 'active' : ''}`}
               >
-                📚 Case Library
+                 Case Library
               </Link>
             </li>
 
@@ -100,7 +100,7 @@ function Navigation() {
                 <small>{user?.email}</small>
                 <br />
                 <small className="text-muted">
-                  {isClient ? '👤 Client' : '👨‍⚖️ Lawyer'}
+                  {isClient ? ' Client' : ' Lawyer'}
                 </small>
               </li>
 
@@ -108,7 +108,7 @@ function Navigation() {
 
               <li>
                 <button onClick={handleLogout} className="dropdown-item">
-                  🚪 Sign Out
+                   Sign Out
                 </button>
               </li>
             </ul>

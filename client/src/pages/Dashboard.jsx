@@ -158,9 +158,9 @@ function Dashboard() {
                       {/* STATS */}
                       <div className="d-flex gap-3 flex-wrap text-muted small">
 
-                        <span>📝 {caseItem.notes?.length || 0} Notes</span>
-                        <span>📄 {caseItem.documents?.length || 0} Docs</span>
-                        <span>📅 {caseItem.deadlines?.length || 0} Deadlines</span>
+                        <span> {caseItem.notes?.length || 0} Notes</span>
+                        <span> {caseItem.documents?.length || 0} Docs</span>
+                        <span> {caseItem.deadlines?.length || 0} Deadlines</span>
 
                       </div>
 

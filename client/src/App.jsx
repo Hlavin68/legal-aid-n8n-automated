@@ -13,6 +13,7 @@ import CaseDetails from './pages/CaseDetails';
 import DocumentGenerator from './pages/DocumentGenerator';
 import CaseBase from './pages/CaseBase';
 import CaseBaseDetails from './pages/CaseBaseDetails';
+import UploadCase from './pages/UploadCase';
 
 function App() {
   return (
@@ -123,6 +124,14 @@ function App() {
                           element={
                             <ProtectedRoute requiredRole="lawyer">
                               <CaseBaseDetails />
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="/lawyer/upload-case"
+                          element={
+                            <ProtectedRoute requiredRole="lawyer">
+                              <UploadCase />
                             </ProtectedRoute>
                           }
                         />

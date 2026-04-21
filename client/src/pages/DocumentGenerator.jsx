@@ -134,7 +134,7 @@ export function DocumentGenerator() {
 
       {/* HEADER */}
       <div className="text-center mb-4">
-        <h1 className="fw-bold">📄 Document Generator</h1>
+        <h1 className="fw-bold"> Document Generator</h1>
         <p className="text-muted">
           Generate legal documents using templates
         </p>
@@ -243,11 +243,11 @@ export function DocumentGenerator() {
 
                   <div className="d-flex gap-2 mt-3">
                     <button className="btn btn-outline-primary w-50" onClick={handleCopy}>
-                      📋 Copy
+                       Copy
                     </button>
 
                     <button className="btn btn-outline-secondary w-50" onClick={handleDownload}>
-                      💾 Download
+                       Download
                     </button>
                   </div>
                 </>
@@ -267,7 +267,7 @@ export function DocumentGenerator() {
       {!generatedDocument && (
         <div className="card shadow-sm border-0 mt-4">
           <div className="card-body">
-            <h5 className="mb-3">📋 Available Templates</h5>
+            <h5 className="mb-3"> Available Templates</h5>
 
             <div className="row g-3">
               {Object.entries(documentTemplates).map(([key, value]) => (

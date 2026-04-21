@@ -93,7 +93,7 @@ const ChatHistorySidebar = ({ onSelectSession, onClose, isLoading }) => {
 
       {/* CLOSE BUTTON */}
       <div className="d-flex justify-content-between align-items-center p-3 border-bottom">
-        <h6 className="mb-0">💬 History</h6>
+        <h6 className="mb-0"> History</h6>
         <button
           className="btn btn-sm btn-close"
           onClick={onClose}

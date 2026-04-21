@@ -92,7 +92,7 @@ export function ChatPage() {
         {
           id: Date.now() + 1,
           role: "bot",
-          text: `❌ Error: ${apiErr.message}. Backend: ${API_URL}`
+          text: ` Error: ${apiErr.message}. Backend: ${API_URL}`
         }
       ]);
     } finally {
@@ -197,7 +197,7 @@ export function ChatPage() {
               <div className="card-body d-flex justify-content-between align-items-center">
 
                 <div>
-                  <h5 className="mb-0">🏛️ Kenyan Legal AI Assistant</h5>
+                  <h5 className="mb-0"> Kenyan Legal AI Assistant</h5>
                   <small className="text-muted">
                     {sessionTitle}
                   </small>
@@ -209,7 +209,7 @@ export function ChatPage() {
                     onClick={() => setShowHistory(!showHistory)}
                     title="View chat history"
                   >
-                    📋 History
+                     History
                   </button>
                   <button
                     className="btn btn-sm btn-outline-primary"
@@ -217,14 +217,14 @@ export function ChatPage() {
                     disabled={loadingSession}
                     title="Start a new chat"
                   >
-                    ➕ New Chat
+                     New Chat
                   </button>
                   <button
                     className="btn btn-sm btn-outline-danger"
                     onClick={handleClear}
                     title="Clear current chat"
                   >
-                    🗑️ Clear
+                     Clear
                   </button>
                 </div>
 
