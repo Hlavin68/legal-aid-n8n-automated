@@ -4,7 +4,6 @@ import { useAuth } from "../hooks/useAuth";
 import axios from "axios";
 
 const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
-console.log("Frontend caseId:", caseId);
 /**
  * CaseBaseDetails Component
  * Displays full details of a legal case with PDF viewer
@@ -12,6 +11,8 @@ console.log("Frontend caseId:", caseId);
  */
 export function CaseBaseDetails() {
   const { caseId } = useParams();
+  console.log("Frontend caseId:", caseId);
+
   const navigate = useNavigate();
   const { token, user } = useAuth();
 
