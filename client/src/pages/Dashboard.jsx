@@ -75,16 +75,11 @@ function Dashboard() {
                 className="btn btn-primary btn-lg"
                 onClick={() => setIsModalOpen(true)}
               >
-                ➕ Create Case
+                + Create Case
               </button>
             )}
 
-            <button
-              className="btn btn-outline-light btn-lg"
-              onClick={handleAskAI}
-            >
-              🤖 Ask AI
-            </button>
+            
 
           </div>
 

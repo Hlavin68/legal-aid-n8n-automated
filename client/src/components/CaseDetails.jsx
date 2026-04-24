@@ -126,11 +126,11 @@ const CaseDetails = ({ caseId, onBack }) => {
   };
 
   const sections = [
-    { id: 'documents', label: '📄 Documents' },
-    { id: 'deadlines', label: '📅 Deadlines' },
-    { id: 'steps', label: '📋 Steps' },
-    { id: 'notes', label: '📝 Notes' },
-    { id: 'summary', label: '📊 Summary' }
+    { id: 'documents', label: ' Documents' },
+    { id: 'deadlines', label: ' Deadlines' },
+    { id: 'steps', label: ' Steps' },
+    { id: 'notes', label: ' Notes' },
+    { id: 'summary', label: ' Summary' }
   ];
 
   if (loading) {

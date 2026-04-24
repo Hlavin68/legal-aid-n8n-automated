@@ -120,7 +120,7 @@ export function CaseBaseDetails() {
     return (
       <div className="container py-4">
         <div className="text-center py-5">
-          <h4 className="mb-2">⚠️ Error Loading Case</h4>
+          <h4 className="mb-2">Error Loading Case</h4>
           <p className="text-muted mb-3">{error || "Case not found"}</p>
           <button className="btn btn-primary" onClick={goBack}>
             ← Back to Case Base
@@ -161,13 +161,13 @@ export function CaseBaseDetails() {
 
           {caseData.views && (
             <span className="badge bg-light text-dark">
-              👁️ {caseData.views} views
+               {caseData.views} views
             </span>
           )}
 
           {estimatedReadTime > 0 && (
             <span className="badge bg-light text-dark">
-              📖 ~{estimatedReadTime} min read
+               ~{estimatedReadTime} min read
             </span>
           )}
         </div>
@@ -179,7 +179,7 @@ export function CaseBaseDetails() {
               className="btn btn-primary"
               onClick={handleDownloadPDF}
             >
-              📥 Download PDF
+               Download PDF
             </button>
           )}
 
@@ -192,14 +192,14 @@ export function CaseBaseDetails() {
                     navigate(`/lawyer/edit-case/${caseId}`)
                   }
                 >
-                  ✏️ Edit
+                   Edit
                 </button>
 
                 <button
                   className="btn btn-outline-danger"
                   onClick={() => setShowDeleteConfirm(true)}
                 >
-                  🗑️ Delete
+                   Delete
                 </button>
               </>
             )}
@@ -241,7 +241,7 @@ export function CaseBaseDetails() {
       {caseData.brief && (
         <div className="card shadow-sm border-0 mb-4">
           <div className="card-body">
-            <h5 className="mb-2">📝 Brief Summary</h5>
+            <h5 className="mb-2">Brief Summary</h5>
             <p className="mb-0">{caseData.brief}</p>
           </div>
         </div>
@@ -308,7 +308,7 @@ export function CaseBaseDetails() {
       {caseData.description && (
         <div className="card shadow-sm border-0 mb-4">
           <div className="card-body">
-            <h5 className="mb-3">📖 Full Description</h5>
+            <h5 className="mb-3"> Full Description</h5>
             <p
               className="text-muted mb-0"
               style={{ lineHeight: "1.8" }}
@@ -323,7 +323,7 @@ export function CaseBaseDetails() {
       {caseData.keywords?.length > 0 && (
         <div className="card shadow-sm border-0 mb-4">
           <div className="card-body">
-            <h5 className="mb-3">🏷️ Keywords</h5>
+            <h5 className="mb-3">Keywords</h5>
             <div className="d-flex flex-wrap gap-2">
               {caseData.keywords.map((keyword, idx) => (
                 <span
@@ -342,7 +342,7 @@ export function CaseBaseDetails() {
       {caseData.pdfUrl && (
         <div className="card shadow-sm border-0 mb-4">
           <div className="card-body">
-            <h5 className="mb-3">📄 PDF Document</h5>
+            <h5 className="mb-3">PDF Document</h5>
 
             <iframe
               src={`http://localhost:5000/${caseData.pdfUrl}`}
@@ -360,7 +360,7 @@ export function CaseBaseDetails() {
                 className="btn btn-sm btn-outline-primary"
                 onClick={handleDownloadPDF}
               >
-                📥 Download PDF
+                Download PDF
               </button>
 
               <a

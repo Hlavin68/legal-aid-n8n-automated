@@ -1,19 +1,20 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
-import { CaseProvider } from './context/CaseContext';
-import ProtectedRoute from './components/ProtectedRoute';
-import Navigation from './components/Navigation';
-import LoginPage from './pages/Auth';
+import React from "react";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext";
+import { CaseProvider } from "./context/CaseContext";
 
-// Client Pages
-import Dashboard from './pages/Dashboard';
-import ChatPage from './pages/ChatPage';
-import CaseDetails from './pages/CaseDetails';
-import DocumentGenerator from './pages/DocumentGenerator';
-import CaseBase from './pages/CaseBase';
-import CaseBaseDetails from './pages/CaseBaseDetails';
-import UploadCase from './pages/UploadCase';
+import ProtectedRoute from "./components/ProtectedRoute";
+import AppLayout from "./components/AppLayout";
+
+import LoginPage from "./pages/Auth";
+import Dashboard from "./pages/Dashboard";
+import ChatPage from "./pages/ChatPage";
+import CaseDetails from "./pages/CaseDetails";
+import DocumentGenerator from "./pages/DocumentGenerator";
+import CaseBase from "./pages/CaseBase";
+import CaseBaseDetails from "./pages/CaseBaseDetails";
+import UploadCase from "./pages/UploadCase";
+import Home from "./pages/Home";
 
 function App() {
   return (
@@ -22,127 +23,75 @@ function App() {
         <Router>
           <div className="d-flex flex-column min-vh-100">
             <Routes>
-              {/* Auth */}
+              {/* ✅ PUBLIC ROUTES */}
+              <Route path="/" element={<Home />} />
               <Route path="/auth" element={<LoginPage />} />
 
-              {/* Protected Routes Wrapper */}
-              <Route
-                path="/*"
-                element={
-                  <ProtectedRoute>
-                    <Navigation />
-                    <main className="flex-grow-1">
-                      <Routes>
-                        {/* Default redirect */}
-                        <Route path="/" element={<Navigate to="/client/dashboard" replace />} />
+              {/* ✅ PROTECTED ROUTES */}
+              <Route element={<ProtectedRoute />}>
+                <Route element={<AppLayout />}>
 
-                        {/* CLIENT ROUTES */}
-                        <Route
-                          path="/client/dashboard"
-                          element={
-                            <ProtectedRoute requiredRole="client">
-                              <Dashboard />
-                            </ProtectedRoute>
-                          }
-                        />
-                        <Route
-                          path="/client/case/:caseId"
-                          element={
-                            <ProtectedRoute requiredRole="client">
-                              <CaseDetails />
-                            </ProtectedRoute>
-                          }
-                        />
-                        <Route
-                          path="/client/documents"
-                          element={
-                            <ProtectedRoute requiredRole="client">
-                              <DocumentGenerator />
-                            </ProtectedRoute>
-                          }
-                        />
-                        <Route
-                          path="/client/chat"
-                          element={
-                            <ProtectedRoute requiredRole="client">
-                              <ChatPage />
-                            </ProtectedRoute>
-                          }
-                        />
-                        <Route
-                          path="/client/case-base"
-                          element={
-                            <ProtectedRoute requiredRole="client">
-                              <CaseBase />
-                            </ProtectedRoute>
-                          }
-                        />
-                        <Route
-                          path="/client/case-base/:caseId"
-                          element={
-                            <ProtectedRoute requiredRole="client">
-                              <CaseBaseDetails />
-                            </ProtectedRoute>
-                          }
-                        />
+                  {/* CLIENT */}
+                  <Route
+                    path="/client/dashboard"
+                    element={<ProtectedRoute requiredRole="client"><Dashboard /></ProtectedRoute>}
+                  />
+                  <Route
+                    path="/client/case/:caseId"
+                    element={<ProtectedRoute requiredRole="client"><CaseDetails /></ProtectedRoute>}
+                  />
+                  <Route
+                    path="/client/documents"
+                    element={<ProtectedRoute requiredRole="client"><DocumentGenerator /></ProtectedRoute>}
+                  />
+                  <Route
+                    path="/client/chat"
+                    element={<ProtectedRoute requiredRole="client"><ChatPage /></ProtectedRoute>}
+                  />
+                  <Route
+                    path="/client/case-base"
+                    element={<ProtectedRoute requiredRole="client"><CaseBase /></ProtectedRoute>}
+                  />
+                  <Route
+                    path="/client/case-base/:caseId"
+                    element={<ProtectedRoute requiredRole="client"><CaseBaseDetails /></ProtectedRoute>}
+                  />
 
-                        {/* LAWYER ROUTES */}
-                        <Route
-                          path="/lawyer/dashboard"
-                          element={
-                            <ProtectedRoute requiredRole="lawyer">
-                              <Dashboard />
-                            </ProtectedRoute>
-                          }
-                        />
-                        <Route
-                          path="/lawyer/case/:caseId"
-                          element={
-                            <ProtectedRoute requiredRole="lawyer">
-                              <CaseDetails />
-                            </ProtectedRoute>
-                          }
-                        />
-                        <Route
-                          path="/lawyer/chat"
-                          element={
-                            <ProtectedRoute requiredRole="lawyer">
-                              <ChatPage />
-                            </ProtectedRoute>
-                          }
-                        />
-                        <Route
-                          path="/lawyer/case-base"
-                          element={
-                            <ProtectedRoute requiredRole="lawyer">
-                              <CaseBase />
-                            </ProtectedRoute>
-                          }
-                        />
-                        <Route
-                          path="/lawyer/case-base/:caseId"
-                          element={
-                            <ProtectedRoute requiredRole="lawyer">
-                              <CaseBaseDetails />
-                            </ProtectedRoute>
-                          }
-                        />
-                        <Route
-                          path="/lawyer/upload-case"
-                          element={
-                            <ProtectedRoute requiredRole="lawyer">
-                              <UploadCase />
-                            </ProtectedRoute>
-                          }
-                        />
+                  {/* LAWYER */}
+                  <Route
+                    path="/lawyer/dashboard"
+                    element={<ProtectedRoute requiredRole="lawyer"><Dashboard /></ProtectedRoute>}
+                  />
+                  <Route
+                    path="/lawyer/case/:caseId"
+                    element={<ProtectedRoute requiredRole="lawyer"><CaseDetails /></ProtectedRoute>}
+                  />
+                  <Route
+                    path="/lawyer/documents"
+                    element={<ProtectedRoute requiredRole="lawyer"><DocumentGenerator /></ProtectedRoute>}
+                  />
+                  <Route
+                    path="/lawyer/chat"
+                    element={<ProtectedRoute requiredRole="lawyer"><ChatPage /></ProtectedRoute>}
+                  />
+                  <Route
+                    path="/lawyer/case-base"
+                    element={<ProtectedRoute requiredRole="lawyer"><CaseBase /></ProtectedRoute>}
+                  />
+                  <Route
+                    path="/lawyer/case-base/:caseId"
+                    element={<ProtectedRoute requiredRole="lawyer"><CaseBaseDetails /></ProtectedRoute>}
+                  />
+                  <Route
+                    path="/lawyer/upload-case"
+                    element={<ProtectedRoute requiredRole="lawyer"><UploadCase /></ProtectedRoute>}
+                  />
 
-                        {/* Fallback */}
-                        <Route path="*" element={<Navigate to="/" replace />} />
-                      </Routes>
-                    </main>
-                  </ProtectedRoute>
-                }
-              />
+                </Route>
+              </Route>
+
+              {/* Fallback */}
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </div>
         </Router>

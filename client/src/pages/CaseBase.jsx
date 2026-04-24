@@ -118,7 +118,12 @@ export function CaseBase() {
         <div>
           <h1 className="fw-bold mb-1">📚 Legal Case Library</h1>
           <p className="text-muted">
-            Browse legal precedent cases and judgments from Kenya's legal system
+            Case Summaries and Court Judgments
+            Discover a comprehensive resource for Case Summaries and Court Judgments in Kenya. 
+            This section provides access to a wide range of legal decisions from various Kenyan courts. 
+            We offer both detailed case summaries and full-text judgments. The content is suitable for legal professionals, students and researchers. 
+            Explore significant rulings, 
+            understand key legal principles and stay updated with the latest judicial decisions.
           </p>
         </div>
         {user?.role === "lawyer" && (

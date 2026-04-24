@@ -15,7 +15,7 @@ function Navigation() {
   const dashboardPath = isClient ? '/client/dashboard' : '/lawyer/dashboard';
   const chatPath = isClient ? '/client/chat' : '/lawyer/chat';
   const caseBasePath = isClient ? '/client/case-base' : '/lawyer/case-base';
-  const documentsPath = '/client/documents';
+  const documentsPath = isClient ? '/client/documents' : '/lawyer/documents';
 
   const handleLogout = () => {
     logout();
@@ -64,7 +64,6 @@ function Navigation() {
               </Link>
             </li>
 
-            {isClient && (
               <li className="nav-item">
                 <Link
                   to={documentsPath}
@@ -73,7 +72,6 @@ function Navigation() {
                    Documents
                 </Link>
               </li>
-            )}
 
             <li className="nav-item">
               <Link

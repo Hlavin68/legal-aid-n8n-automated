@@ -122,8 +122,13 @@ export function CaseDetails() {
 
         <button
           className="btn btn-outline-secondary btn-sm mb-3"
-          onClick={() => navigate("/dashboard")}
-        >
+          onClick={() => {
+            if (user?.role) {
+              navigate(`/${user.role}/dashboard`);
+            } else {
+              navigate("/");
+            }
+          }}        >
           ← Back
         </button>
 
