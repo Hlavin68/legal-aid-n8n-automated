@@ -17,11 +17,11 @@ export function ProtectedRoute({ children, requiredRole = null }) {
     return <Navigate to="/auth" replace />;
   }
 
-  if (requiredRole && user?.role !== requiredRole) {
+  const normalizedRequiredRole = requiredRole ? String(requiredRole).toLowerCase() : null;
+  if (normalizedRequiredRole && user?.role !== normalizedRequiredRole) {
     return <Navigate to="/" replace />;
   }
 
-  // 🔥 Key improvement
   return children ? children : <Outlet />;
 }
 

@@ -7,15 +7,23 @@ function Navigation() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
-  const isClient = user?.role === 'client';
+  const userRole = user?.role;
+  const isClient = userRole === 'client';
+  const isLawyer = userRole === 'lawyer';
+  const isParalegal = userRole === 'paralegal';
+  const isAdmin = userRole === 'admin';
 
   const isActive = (path) =>
     location.pathname === path || location.pathname.startsWith(path + '/');
 
-  const dashboardPath = isClient ? '/client/dashboard' : '/lawyer/dashboard';
-  const chatPath = isClient ? '/client/chat' : '/lawyer/chat';
-  const caseBasePath = isClient ? '/client/case-base' : '/lawyer/case-base';
-  const documentsPath = isClient ? '/client/documents' : '/lawyer/documents';
+  const dashboardPath =
+    isClient ? '/client/dashboard' : isLawyer ? '/lawyer/dashboard' : isParalegal ? '/staff/dashboard' : isAdmin ? '/admin/dashboard' : '/';
+  const chatPath =
+    isClient ? '/client/chat' : isLawyer ? '/lawyer/chat' : isParalegal ? '/staff/chat' : '/';
+  const caseBasePath =
+    isClient ? '/client/case-base' : isLawyer ? '/lawyer/case-base' : isParalegal ? '/staff/case-base' : '/';
+  const documentsPath =
+    isClient ? '/client/documents' : isLawyer ? '/lawyer/documents' : '/';
 
   const handleLogout = () => {
     logout();
@@ -64,6 +72,7 @@ function Navigation() {
               </Link>
             </li>
 
+            {(isClient || isLawyer) && (
               <li className="nav-item">
                 <Link
                   to={documentsPath}
@@ -72,15 +81,18 @@ function Navigation() {
                    Documents
                 </Link>
               </li>
+            )}
 
-            <li className="nav-item">
-              <Link
-                to={caseBasePath}
-                className={`nav-link ${isActive(caseBasePath) ? 'active' : ''}`}
-              >
-                 Case Library
-              </Link>
-            </li>
+            {(isClient || isLawyer || isParalegal) && (
+              <li className="nav-item">
+                <Link
+                  to={caseBasePath}
+                  className={`nav-link ${isActive(caseBasePath) ? 'active' : ''}`}
+                >
+                   Case Library
+                </Link>
+              </li>
+            )}
 
           </ul>
 
@@ -98,7 +110,7 @@ function Navigation() {
                 <small>{user?.email}</small>
                 <br />
                 <small className="text-muted">
-                  {isClient ? ' Client' : ' Lawyer'}
+                  {isClient ? 'Client' : isLawyer ? 'Lawyer' : isParalegal ? 'Paralegal' : isAdmin ? 'Admin' : 'User'}
                 </small>
               </li>
 
