@@ -189,6 +189,34 @@ export function CaseProvider({ children }) {
     }
   }, []);
 
+  const assignUser = useCallback(async (caseId, userId, role) => {
+    try {
+      const response = await caseAPI.assignUser(caseId, userId, role);
+      if (response.data?.success) {
+        setCases(prev => prev.map(c => 
+          (c._id === caseId || c.id === caseId) ? response.data.case : c
+        ));
+      }
+    } catch (err) {
+      console.error('Error assigning user:', handleAPIError(err));
+      throw err;
+    }
+  }, []);
+
+  const removeUser = useCallback(async (caseId, userId) => {
+    try {
+      const response = await caseAPI.removeUser(caseId, userId);
+      if (response.data?.success) {
+        setCases(prev => prev.map(c => 
+          (c._id === caseId || c.id === caseId) ? response.data.case : c
+        ));
+      }
+    } catch (err) {
+      console.error('Error removing user:', handleAPIError(err));
+      throw err;
+    }
+  }, []);
+
   const value = {
     cases,
     currentCaseId,
@@ -204,6 +232,8 @@ export function CaseProvider({ children }) {
     addDeadline,
     deleteDeadline,
     updateCaseSummary,
+    assignUser,
+    removeUser,
     fetchCases,
     loading,
     error

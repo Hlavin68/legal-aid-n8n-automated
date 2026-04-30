@@ -2,9 +2,12 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useCaseContext } from "../hooks/useCaseContext";
 import { useAuth } from "../hooks/useAuth";
+import { authAPI } from "../services/api";
 
 const LAWYER_TABS = [
   "overview",
+  "inbox",
+  "assign",
   "documents",
   "deadlines",
   "steps",
@@ -13,7 +16,7 @@ const LAWYER_TABS = [
   "summary"
 ];
 
-const CLIENT_TABS = ["overview", "notes"];
+const CLIENT_TABS = ["overview", "inbox", "notes"];
 
 const STATE_LABELS = {
   new: "New",
@@ -39,7 +42,9 @@ export function CaseDetails() {
     addDeadline,
     deleteDeadline,
     updateCaseSummary,
-    changeStatus
+    changeStatus,
+    assignUser,
+    removeUser
   } = useCaseContext();
 
   const [currentCase, setCurrentCase] = useState(null);
@@ -48,6 +53,8 @@ export function CaseDetails() {
   const [newDeadlineTitle, setNewDeadlineTitle] = useState("");
   const [newDeadlineDate, setNewDeadlineDate] = useState("");
   const [summaryLoading, setSummaryLoading] = useState(false);
+  const [availableUsers, setAvailableUsers] = useState([]);
+  const [selectedUserId, setSelectedUserId] = useState("");
 
   const isLawyer =
     user?.role === "lawyer" || user?.role === "paralegal";
@@ -64,6 +71,23 @@ export function CaseDetails() {
 
     setCurrentCase(found);
   }, [caseId, cases, setCurrentCaseId]);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      if (activeTab === "assign" && user?.role === "lawyer") {
+        try {
+          const response = await authAPI.getUsers();
+          if (response.data?.success) {
+            setAvailableUsers(response.data.users);
+          }
+        } catch (err) {
+          console.error("Error fetching users:", err);
+        }
+      }
+    };
+
+    fetchUsers();
+  }, [activeTab, user?.role]);
 
   if (!currentCase) {
     return (
@@ -83,6 +107,17 @@ export function CaseDetails() {
     currentCase.deadlines
       ?.filter((d) => new Date(d.date) >= new Date())
       .sort((a, b) => new Date(a.date) - new Date(b.date)) || [];
+
+  const userId = user?.id || user?._id;
+  const inboxMessages = (currentCase.notifications || [])
+    .filter((notification) => {
+      const recipientByRole = notification.recipientRoles?.includes(user?.role);
+      const recipientById = notification.recipientIds?.some(
+        (id) => id?.toString?.() === userId
+      );
+      return recipientByRole || recipientById || (!notification.recipientRoles?.length && !notification.recipientIds?.length);
+    })
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
   const handleAddNote = () => {
     if (!newNote.trim()) return;
@@ -329,6 +364,36 @@ export function CaseDetails() {
             </>
           )}
 
+          {/* INBOX */}
+          {activeTab === "inbox" && (
+            <>
+              <h5>Inbox</h5>
+              {inboxMessages.length > 0 ? (
+                <div className="list-group">
+                  {inboxMessages.map((note) => (
+                    <div key={note.id} className="list-group-item">
+                      <div className="d-flex justify-content-between align-items-start">
+                        <div>
+                          <p className="mb-1">{note.message}</p>
+                          <small className="text-muted">
+                            {note.type.charAt(0).toUpperCase() + note.type.slice(1)} • {new Date(note.createdAt).toLocaleDateString()}
+                          </small>
+                        </div>
+                        <span className="badge bg-info text-dark">
+                          {note.recipientRoles?.join(', ') || 'all'}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="alert alert-light">
+                  No inbox messages for this case yet.
+                </div>
+              )}
+            </>
+          )}
+
           {/* NOTES */}
           {activeTab === "notes" && (
             <>
@@ -467,6 +532,96 @@ export function CaseDetails() {
                   </li>
                 ))}
               </ul>
+
+              <div className="mt-3">
+                <button
+                  className="btn btn-outline-primary"
+                  onClick={() => {
+                    const rolePath = user?.role === "paralegal" ? "staff" : user?.role;
+                    navigate(`/${rolePath}/case/${caseKey}/pleadings`);
+                  }}
+                >
+                  Open Drafting Pleadings
+                </button>
+              </div>
+            </>
+          )}
+
+          {/* ASSIGN USERS */}
+          {activeTab === "assign" && user?.role === "lawyer" && (
+            <>
+              <h5>Assign Users to Case</h5>
+
+              {/* CURRENT ASSIGNED USERS */}
+              <div className="mb-4">
+                <h6>Currently Assigned Users</h6>
+                {currentCase.assignedUsers && currentCase.assignedUsers.length > 0 ? (
+                  <div className="list-group">
+                    {currentCase.assignedUsers.map((assigned) => (
+                      <div
+                        key={assigned.userId._id}
+                        className="list-group-item d-flex justify-content-between align-items-center"
+                      >
+                        <div>
+                          <strong>{assigned.userId.name}</strong>
+                          <br />
+                          <small className="text-muted">
+                            {assigned.userId.email} • {assigned.role}
+                          </small>
+                        </div>
+                        <button
+                          className="btn btn-sm btn-outline-danger"
+                          onClick={() => removeUser(caseKey, assigned.userId._id)}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted">No users assigned to this case.</p>
+                )}
+              </div>
+
+              {/* ASSIGN NEW USER */}
+              <div className="card p-3">
+                <h6>Assign New User</h6>
+                <div className="row g-2">
+                  <div className="col-md-10">
+                    <select
+                      className="form-select"
+                      value={selectedUserId}
+                      onChange={(e) => setSelectedUserId(e.target.value)}
+                    >
+                      <option value="">Select a user...</option>
+                      {availableUsers.map((user) => (
+                        <option key={user._id} value={user._id}>
+                          {user.name} ({user.email}) - {user.role}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="col-md-2">
+                    <button
+                      className="btn btn-primary w-100"
+                      onClick={async () => {
+                        if (!selectedUserId) return;
+                        const selectedUser = availableUsers.find(u => u._id === selectedUserId);
+                        if (!selectedUser) return;
+                        try {
+                          await assignUser(caseKey, selectedUserId, selectedUser.role);
+                          setSelectedUserId("");
+                        } catch (err) {
+                          alert("Failed to assign user");
+                        }
+                      }}
+                      disabled={!selectedUserId}
+                    >
+                      Assign
+                    </button>
+                  </div>
+                </div>
+              </div>
             </>
           )}
 

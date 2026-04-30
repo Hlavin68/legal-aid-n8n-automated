@@ -114,3 +114,21 @@ export const updateProfile = async (req, res) => {
     return res.status(400).json({ error: 'Profile update failed' });
   }
 };
+
+export const getUsers = async (req, res) => {
+  try {
+    // Only lawyers and admins can view users for assignment
+    if (!['lawyer', 'admin'].includes(req.user.role)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const users = await User.find({ 
+      role: { $in: ['lawyer', 'paralegal'] },
+      _id: { $ne: req.user.id } // Exclude current user
+    }).select('name email role firm licenseNumber username');
+
+    return res.status(200).json({ success: true, users });
+  } catch (error) {
+    return res.status(500).json({ error: 'Unable to fetch users' });
+  }
+};

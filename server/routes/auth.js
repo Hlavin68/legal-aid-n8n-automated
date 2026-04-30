@@ -5,7 +5,8 @@ import {
   register,
   login,
   getCurrentUser,
-  updateProfile
+  updateProfile,
+  getUsers
 } from '../controllers/authController.js';
 
 import { authenticate } from '../middleware/auth.js';
@@ -83,6 +84,9 @@ router.get('/me', authenticate, getCurrentUser);
 
 // Update profile
 router.put('/profile', authenticate, updateProfile);
+
+// Get users (for assignment)
+router.get('/users', authenticate, getUsers);
 
 // Logout (client-side token removal, but useful endpoint)
 router.post('/logout', authenticate, (req, res) => {

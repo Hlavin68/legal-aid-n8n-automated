@@ -37,7 +37,7 @@ function LoginPage() {
 
       if (result.success) {
         const roleRoutes = {
-          lawyer: '/staff/dashboard',
+          lawyer: '/lawyer/dashboard',
           paralegal: '/staff/dashboard',
           client: '/client/dashboard',
           admin: '/admin/dashboard'
@@ -78,7 +78,7 @@ function LoginPage() {
 
       if (result.success) {
         const roleRoutes = {
-          lawyer: '/staff/dashboard',
+          lawyer: '/lawyer/dashboard',
           paralegal: '/staff/dashboard',
           client: '/client/dashboard',
           admin: '/admin/dashboard'

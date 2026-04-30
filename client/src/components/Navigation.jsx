@@ -1,17 +1,60 @@
-import React from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { useCaseContext } from '../hooks/useCaseContext';
 
 function Navigation() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-
+  const { cases, fetchCases } = useCaseContext();
   const userRole = user?.role;
   const isClient = userRole === 'client';
   const isLawyer = userRole === 'lawyer';
   const isParalegal = userRole === 'paralegal';
   const isAdmin = userRole === 'admin';
+  const userId = user?.id || user?._id;
+
+  useEffect(() => {
+    if (user && cases.length === 0) {
+      fetchCases();
+    }
+  }, [user, cases.length, fetchCases]);
+
+  const inboxMessages = useMemo(() => {
+    if (!user || !cases?.length) return [];
+
+    return cases
+      .flatMap((caseItem) => {
+        const caseId = caseItem._id || caseItem.id;
+        return (caseItem.notifications || [])
+          .filter((notification) => {
+            const recipientByRole = notification.recipientRoles?.includes(user.role);
+            const recipientById = notification.recipientIds?.some(
+              (id) => id?.toString?.() === userId
+            );
+            return (
+              recipientByRole ||
+              recipientById ||
+              (!notification.recipientRoles?.length && !notification.recipientIds?.length)
+            );
+          })
+          .map((notification) => ({
+            id:
+              notification.id ||
+              `${caseId}-${notification.createdAt || notification.message?.slice(0, 20)}`,
+            caseId,
+            caseTitle: caseItem.title,
+            message: notification.message,
+            createdAt: notification.createdAt,
+            type: notification.type
+          }));
+      })
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  }, [cases, user, userId]);
+
+  const caseRoutePrefix =
+    isClient ? '/client' : isLawyer ? '/lawyer' : isParalegal ? '/staff' : isAdmin ? '/admin' : '/';
 
   const isActive = (path) =>
     location.pathname === path || location.pathname.startsWith(path + '/');
@@ -95,6 +138,55 @@ function Navigation() {
             )}
 
           </ul>
+
+          <div className="dropdown">
+            <button
+              className="btn btn-light position-relative"
+              data-bs-toggle="dropdown"
+            >
+              <i className="bi bi-chat-square-text-fill"></i>
+              {inboxMessages.length > 0 && (
+                <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                  {inboxMessages.length}
+                </span>
+              )}
+            </button>
+
+            <ul
+              className="dropdown-menu dropdown-menu-end p-2"
+              style={{ width: '320px', maxHeight: '400px', overflowY: 'auto' }}
+            >
+              <li className="dropdown-header fw-bold">Inbox</li>
+
+              <li><hr className="dropdown-divider" /></li>
+
+              {inboxMessages.length === 0 ? (
+                <li className="text-center text-muted py-3">
+                  No messages in your inbox
+                </li>
+              ) : (
+                inboxMessages.map((msg) => {
+                  const messageLink = isAdmin
+                    ? '/admin/dashboard'
+                    : `${caseRoutePrefix}/case/${msg.caseId}`;
+
+                  return (
+                    <li key={msg.id}>
+                      <Link
+                        to={messageLink}
+                        className="dropdown-item"
+                      >
+                        <div className="fw-semibold">{msg.caseTitle}</div>
+                        <small className="text-muted">
+                          {msg.message}
+                        </small>
+                      </Link>
+                    </li>
+                  );
+                })
+              )}
+            </ul>
+          </div>
 
           <div className="dropdown">
             <button

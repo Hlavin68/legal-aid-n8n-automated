@@ -63,7 +63,8 @@ export const authAPI = {
   register: (data) => apiClient.post('/auth/register', data),
   login: (data) => apiClient.post('/auth/login', data),
   getCurrentUser: () => apiClient.get('/auth/me'),
-  updateProfile: (data) => apiClient.put('/auth/profile', data)
+  updateProfile: (data) => apiClient.put('/auth/profile', data),
+  getUsers: () => apiClient.get('/auth/users')
 };
 
 // ================= CASE =================
@@ -75,9 +76,6 @@ export const caseAPI = {
   changeStatus: (caseId, status) =>
     apiClient.put(`/cases/${caseId}/status`, { newStatus: status }),
   deleteCase: (caseId) => apiClient.delete(`/cases/${caseId}`),
-  assignUser: (caseId, data) => apiClient.post(`/cases/${caseId}/assign`, data),
-  removeUser: (caseId, userId) =>
-    apiClient.delete(`/cases/${caseId}/users/${userId}`),
 
   // Notes
   addNote: (caseId, content) =>
@@ -95,7 +93,11 @@ export const caseAPI = {
   getCaseBase: (params) =>
     apiClient.get('/cases/base/list', { params }),
   publishToCaseBase: (caseId) =>
-    apiClient.post(`/cases/${caseId}/publish`)
+    apiClient.post(`/cases/${caseId}/publish`),
+  assignUser: (caseId, userId, role) =>
+    apiClient.post(`/cases/${caseId}/assign`, { userId, userRole: role }),
+  removeUser: (caseId, userId) =>
+    apiClient.delete(`/cases/${caseId}/users/${userId}`)
 };
 
 // ================= CHAT =================
@@ -126,8 +128,22 @@ export const chatAPI = {
 
 // ================= DOCUMENTS =================
 export const documentAPI = {
-  generateDocument: (data) =>
-    apiClient.post('/documents/generate', data)
+  generateDocument: (data) => apiClient.post('/documents/generate', data),
+  uploadDocument: (caseId, formData) =>
+    apiClient.post(`/documents/${caseId}/upload`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    }),
+  getDocuments: (caseId) => apiClient.get(`/documents/${caseId}`),
+  deleteDocument: (caseId, documentId) => apiClient.delete(`/documents/${caseId}/${documentId}`),
+  updateDocumentStatus: (caseId, documentId, status) =>
+    apiClient.put(`/documents/${caseId}/${documentId}/status`, { newStatus: status })
+};
+
+// ================= TASKS =================
+export const taskAPI = {
+  createTask: (caseId, data) => apiClient.post(`/cases/${caseId}/tasks`, data),
+  updateTaskStatus: (caseId, taskId, data) =>
+    apiClient.put(`/cases/${caseId}/tasks/${taskId}/status`, data)
 };
 
 // ================= ERROR HANDLER =================

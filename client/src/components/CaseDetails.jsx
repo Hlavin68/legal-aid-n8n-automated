@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import EvidenceUpload from './EvidenceUpload';
+import { getStatusLabel } from '../utils/caseWorkflow';
 
 const CaseDetails = ({ caseId, onBack }) => {
   const [caseData, setCaseData] = useState(null);
@@ -12,6 +14,7 @@ const CaseDetails = ({ caseId, onBack }) => {
   const [transitionReason, setTransitionReason] = useState('');
   const [selectedTransition, setSelectedTransition] = useState(null);
   const [userRole, setUserRole] = useState(null);
+  const [userId, setUserId] = useState(null);
   const [activeTab, setActiveTab] = useState('documents');
 
   // Parse user role from localStorage (or from auth context if available)
@@ -21,16 +24,45 @@ const CaseDetails = ({ caseId, onBack }) => {
       if (userStr) {
         const user = JSON.parse(userStr);
         setUserRole(user.role);
+        setUserId(user.id || user._id || null);
       }
     } catch (err) {
       console.error('Failed to parse user info:', err);
     }
   }, []);
 
-  const isLawyer = userRole === 'lawyer';
-  const isParalegal = userRole === 'paralegal';
-  const isClient = userRole === 'client';
-  const canTransitionState = isLawyer || isParalegal;
+  const getCaseRole = () => {
+    if (!caseData || !userId) return null;
+    if (caseData.clientId?._id === userId || caseData.clientId === userId) {
+      return 'client';
+    }
+
+    if (caseData.lawyerId?._id === userId || caseData.lawyerId === userId) {
+      return 'lawyer';
+    }
+
+    const member = caseData.assignedUsers?.find(
+      (u) => u.userId?._id === userId || u.userId === userId
+    );
+
+    if (member) {
+      return member.role;
+    }
+
+    return userRole;
+  };
+
+  const caseRole = getCaseRole();
+  const isLawyer = caseRole === 'lawyer';
+  const isParalegal = caseRole === 'paralegal';
+  const isClient = caseRole === 'client';
+  const canUploadDocuments = ['lawyer', 'paralegal', 'client'].includes(caseRole);
+  const canDraftDocuments = ['lawyer', 'paralegal'].includes(caseRole);
+  const canApproveDocuments = caseRole === 'lawyer';
+  const canManageDeadlines = ['lawyer', 'paralegal'].includes(caseRole);
+  const canTransitionState = caseRole === 'lawyer';
+  const canCreateTasks = caseRole === 'lawyer';
+  const canExecuteTasks = caseRole === 'paralegal';
   const isCaseClosed = caseData?.status === 'closed';
 
   useEffect(() => {
@@ -43,24 +75,16 @@ const CaseDetails = ({ caseId, onBack }) => {
       const token = localStorage.getItem('token');
       const headers = { Authorization: `Bearer ${token}` };
 
-      const [caseRes, historyRes] = await Promise.all([
+      const [caseRes, historyRes, transRes] = await Promise.all([
         axios.get(`/api/cases/${caseId}`, { headers }),
-        axios.get(`/api/cases/${caseId}/history`, { headers })
+        axios.get(`/api/cases/${caseId}/history`, { headers }),
+        axios.get(`/api/cases/${caseId}/transitions`, { headers })
       ]);
 
       setCaseData(caseRes.data.case);
       setHistory(historyRes.data.history || []);
+      setAvailableTransitions(transRes.data.availableTransitions || {});
       setError(null);
-
-      // Only fetch transitions if user can perform them
-      if (canTransitionState) {
-        try {
-          const transRes = await axios.get(`/api/cases/${caseId}/transitions`, { headers });
-          setAvailableTransitions(transRes.data.availableTransitions || {});
-        } catch (err) {
-          console.error('Failed to fetch transitions:', err.message);
-        }
-      }
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to fetch case details');
     } finally {
@@ -85,10 +109,30 @@ const CaseDetails = ({ caseId, onBack }) => {
     }
   };
 
+  const isTransitionAllowed = (newStatus) => {
+    return !!availableTransitions?.[newStatus];
+  };
+
   const handleTransitionState = async (newStatus) => {
     setTransitionError(null);
-    
-    if (!window.confirm(`Transition case to ${newStatus}?`)) return;
+
+    if (isCaseClosed) {
+      setTransitionError({
+        title: 'Closed case',
+        message: 'This case is closed and cannot be transitioned.'
+      });
+      return;
+    }
+
+    if (!isTransitionAllowed(newStatus)) {
+      setTransitionError({
+        title: 'Invalid transition',
+        message: `Cannot transition from ${getStatusLabel(caseData?.status)} to ${getStatusLabel(newStatus)}.`
+      });
+      return;
+    }
+
+    if (!window.confirm(`Transition case to ${getStatusLabel(newStatus)}?`)) return;
 
     try {
       const token = localStorage.getItem('token');
@@ -121,14 +165,10 @@ const CaseDetails = ({ caseId, onBack }) => {
     return badgeMap[status] || 'badge-secondary';
   };
 
-  const getStatusLabel = (status) => {
-    return status.charAt(0).toUpperCase() + status.slice(1);
-  };
-
   const sections = [
     { id: 'documents', label: ' Documents' },
     { id: 'deadlines', label: ' Deadlines' },
-    { id: 'steps', label: ' Steps' },
+    ...(canCreateTasks || canExecuteTasks ? [{ id: 'tasks', label: ' Tasks' }] : []),
     { id: 'notes', label: ' Notes' },
     { id: 'summary', label: ' Summary' }
   ];

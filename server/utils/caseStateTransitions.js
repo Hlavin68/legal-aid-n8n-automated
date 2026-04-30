@@ -22,14 +22,13 @@ export const CASE_STATUSES = {
  */
 const STATE_TRANSITIONS = {
   [CASE_STATUSES.NEW]: {
-    [CASE_STATUSES.DRAFTING]: ['lawyer', 'paralegal']
+    [CASE_STATUSES.DRAFTING]: ['lawyer']
   },
   [CASE_STATUSES.DRAFTING]: {
-    [CASE_STATUSES.FILED]: ['lawyer'],
-    [CASE_STATUSES.DRAFTING]: ['lawyer', 'paralegal'] // Allow redrafting
+    [CASE_STATUSES.FILED]: ['lawyer']
   },
   [CASE_STATUSES.FILED]: {
-    [CASE_STATUSES.HEARING]: ['lawyer', 'paralegal']
+    [CASE_STATUSES.HEARING]: ['lawyer']
   },
   [CASE_STATUSES.HEARING]: {
     [CASE_STATUSES.JUDGMENT]: ['lawyer']

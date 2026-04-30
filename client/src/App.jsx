@@ -10,6 +10,7 @@ import LoginPage from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import ChatPage from "./pages/ChatPage";
 import CaseDetails from "./pages/CaseDetails";
+import DraftingPleadings from "./pages/DraftingPleadings";
 import DocumentGenerator from "./pages/DocumentGenerator";
 import CaseBase from "./pages/CaseBase";
 import CaseBaseDetails from "./pages/CaseBaseDetails";
@@ -68,6 +69,10 @@ function App() {
                     element={<ProtectedRoute requiredRole="lawyer"><CaseDetails /></ProtectedRoute>}
                   />
                   <Route
+                    path="/lawyer/case/:caseId/pleadings"
+                    element={<ProtectedRoute requiredRole="lawyer"><DraftingPleadings /></ProtectedRoute>}
+                  />
+                  <Route
                     path="/lawyer/documents"
                     element={<ProtectedRoute requiredRole="lawyer"><DocumentGenerator /></ProtectedRoute>}
                   />
@@ -92,6 +97,14 @@ function App() {
                   <Route
                     path="/staff/dashboard"
                     element={<ProtectedRoute requiredRole="paralegal"><Dashboard /></ProtectedRoute>}
+                  />
+                  <Route
+                    path="/staff/case/:caseId"
+                    element={<ProtectedRoute requiredRole="paralegal"><CaseDetails /></ProtectedRoute>}
+                  />
+                  <Route
+                    path="/staff/case/:caseId/pleadings"
+                    element={<ProtectedRoute requiredRole="paralegal"><DraftingPleadings /></ProtectedRoute>}
                   />
                   <Route
                     path="/staff/chat"
