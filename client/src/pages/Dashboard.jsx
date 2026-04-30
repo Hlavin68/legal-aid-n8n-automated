@@ -52,6 +52,12 @@ function Dashboard() {
   }
 
   const userId = user?.id || user?._id;
+    const sortedCases = [...cases].sort((a, b) => {
+    if (a.status === "Closed" && b.status !== "Closed") return 1;
+    if (a.status !== "Closed" && b.status === "Closed") return -1;
+
+    return new Date(b.updatedAt) - new Date(a.updatedAt);
+  });
 
   return (
     <div
@@ -109,7 +115,7 @@ function Dashboard() {
         <div className="container">
           <div className="row g-4">
 
-            {cases.map((caseItem) => {
+            {sortedCases.map((caseItem) => {
               const caseId = caseItem._id || caseItem.id;
 
               const updatedDate = caseItem.updatedAt

@@ -27,6 +27,8 @@ const STATE_LABELS = {
   closed: "Closed"
 };
 
+const STATE_ORDER = ["new", "drafting", "filed", "hearing", "judgment", "closed"];
+
 export function CaseDetails() {
   const { caseId } = useParams();
   const navigate = useNavigate();
@@ -132,6 +134,27 @@ export function CaseDetails() {
     setNewDeadlineDate("");
   };
 
+  const handleStatusChange = (newStatus) => {
+    const currentStatus = currentCase.status;
+
+    if (currentStatus === "closed") {
+      alert("This case is closed and its status cannot be changed.");
+      return;
+    }
+
+    const currentIndex = STATE_ORDER.indexOf(currentStatus);
+    const newIndex = STATE_ORDER.indexOf(newStatus);
+
+    if (newIndex < currentIndex) {
+      alert(
+        `Cannot move the case status backwards. The case is currently "${STATE_LABELS[currentStatus]}" and can only be advanced forward.`
+      );
+      return;
+    }
+
+    changeStatus(caseKey, newStatus);
+  };
+
   const generateSummary = () => {
     setSummaryLoading(true);
 
@@ -183,9 +206,9 @@ export function CaseDetails() {
             <select
               className="form-select form-select-sm w-auto"
               value={currentCase.status}
-              onChange={(e) =>
-                changeStatus(caseKey, e.target.value)
-              }
+              onChange={(e) => handleStatusChange(e.target.value)}
+              disabled={currentCase.status === "closed"}
+              title={currentCase.status === "closed" ? "Case is closed and cannot be changed" : ""}
             >
               {Object.entries(STATE_LABELS).map(([key, label]) => (
                 <option key={key} value={key}>
