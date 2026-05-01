@@ -41,7 +41,7 @@ export function AuthProvider({ children }) {
     initAuth();
   }, []);
 
-  const register = useCallback(async (name, email, password, role, firm = null, licenseNumber = null) => {
+  const register = useCallback(async (name, email, password, role, firm = null, licenseNumber = null, username = null) => {
     try {
       const response = await authAPI.register({
         name,
@@ -49,7 +49,8 @@ export function AuthProvider({ children }) {
         password,
         role,
         ...(firm && { firm }),
-        ...(licenseNumber && { licenseNumber })
+        ...(licenseNumber && { licenseNumber }),
+        ...(username && { username })
       });
 
       if (response.data?.success === true && response.data?.token) {

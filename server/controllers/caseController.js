@@ -1,7 +1,27 @@
 import Case from '../models/Case.js';
 import CaseHistory from '../models/CaseHistory.js';
 import User from '../models/User.js';
+import { getCaseRole } from '../middleware/casePermission.js';
 import { isValidTransition, isValidTransitionForRole, CASE_STATUSES, getStatusLabel, getStateDescription } from '../utils/caseStateTransitions.js';
+
+const getCaseRoleForRequest = (req, caseData) => getCaseRole(req.user.id, req.user.role, caseData);
+
+const createNotification = ({ message, type = 'workflow', recipientRoles = [], recipientIds = [] }) => ({
+  id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+  message,
+  type,
+  recipientRoles,
+  recipientIds,
+  seenBy: [],
+  createdAt: new Date()
+});
+
+const ensureCaseMembership = (req, caseData) => {
+  if (req.user.role === 'admin') {
+    return true;
+  }
+  return !!getCaseRoleForRequest(req, caseData);
+};
 
 /**
  * Log a case action to the audit trail
@@ -44,6 +64,8 @@ export const getMyCases = async (req, res) => {
         { caseCreatedBy: userId },
         { 'assignedUsers.userId': userId }
       ];
+    } else if (userRole === 'admin') {
+      query = {};
     }
 
     const cases = await Case.find(query)
@@ -83,17 +105,9 @@ export const getCaseById = async (req, res) => {
       return res.status(404).json({ error: 'Case not found' });
     }
 
-    // Check authorization
-    if (userRole === 'client') {
-      if (caseData.clientId._id.toString() !== userId) {
-        return res.status(403).json({ error: 'Not authorized to view this case' });
-      }
-    } else if (userRole === 'lawyer' || userRole === 'paralegal') {
-      const isCreator = caseData.caseCreatedBy._id.toString() === userId;
-      const isAssigned = caseData.assignedUsers.some(u => u.userId._id.toString() === userId);
-      if (!isCreator && !isAssigned) {
-        return res.status(403).json({ error: 'Not authorized to view this case' });
-      }
+    const caseRole = getCaseRoleForRequest(req, caseData);
+    if (!ensureCaseMembership(req, caseData)) {
+      return res.status(403).json({ error: 'Not authorized to view this case' });
     }
 
     // Get audit trail
@@ -104,6 +118,7 @@ export const getCaseById = async (req, res) => {
     res.json({
       success: true,
       case: caseData,
+      caseRole: caseRole || req.user.role,
       history
     });
   } catch (error) {
@@ -243,6 +258,15 @@ export const updateCase = async (req, res) => {
       }
     });
 
+    if (updates.stepCompleted === true && caseData.status === 'drafting' && userRole === 'paralegal') {
+      caseData.notifications = caseData.notifications || [];
+      caseData.notifications.unshift(createNotification({
+        message: 'A paralegal marked the drafting step complete. Review the uploaded document and move the case to the next phase.',
+        type: 'document',
+        recipientRoles: ['lawyer']
+      }));
+    }
+
     await caseData.save();
 
     const updatedCase = await Case.findById(caseId)
@@ -284,16 +308,14 @@ export const changeStatus = async (req, res) => {
       return res.status(400).json({ error: 'New status is required' });
     }
 
-    const caseData = await Case.findById(caseId);
+    const caseData = req.caseData || await Case.findById(caseId);
     if (!caseData) {
       return res.status(404).json({ error: 'Case not found' });
     }
 
-    // Check authorization
-    const isCreator = caseData.caseCreatedBy.toString() === userId;
-    const isAssigned = caseData.assignedUsers.some(u => u.userId.toString() === userId);
-    if (!isCreator && !isAssigned) {
-      return res.status(403).json({ error: 'Not authorized to change case status' });
+    const caseRole = getCaseRoleForRequest(req, caseData);
+    if (caseRole !== 'lawyer') {
+      return res.status(403).json({ error: 'Permission denied: insufficient role' });
     }
 
     // Validate status transition with role checking
@@ -307,6 +329,15 @@ export const changeStatus = async (req, res) => {
         statusLabel: validationResult.statusLabel
       });
     }
+
+    // Add client notification for status change
+    caseData.notifications = caseData.notifications || [];
+    caseData.notifications.unshift(createNotification({
+      message: `Case status changed to '${getStatusLabel(newStatus)}'. Please review the latest updates for next steps.`,
+      type: 'status',
+      recipientRoles: ['client'],
+      recipientIds: [caseData.clientId]
+    }));
 
     // Update status
     const previousStatus = caseData.status;
@@ -360,32 +391,30 @@ export const getAvailableTransitions = async (req, res) => {
     const userId = req.user.id;
     const userRole = req.user.role;
 
-    const caseData = await Case.findById(caseId);
+    const caseData = req.caseData || await Case.findById(caseId);
     if (!caseData) {
       return res.status(404).json({ error: 'Case not found' });
     }
 
-    // Check authorization
-    if (userRole === 'client') {
-      if (caseData.clientId.toString() !== userId) {
-        return res.status(403).json({ error: 'Not authorized to view this case' });
-      }
-      // Clients can't transition
+    if (!ensureCaseMembership(req, caseData)) {
+      return res.status(403).json({ error: 'Not authorized to view this case' });
+    }
+
+    const caseRole = getCaseRoleForRequest(req, caseData);
+    if (caseRole !== 'lawyer') {
       return res.json({
         success: true,
-        currentStatus: caseData.status,
+        currentStatus: {
+          value: caseData.status,
+          label: getStatusLabel(caseData.status),
+          description: getStateDescription(caseData.status)
+        },
         availableTransitions: []
       });
     }
 
-    if (userRole !== 'lawyer' && userRole !== 'paralegal') {
-      return res.status(403).json({ error: 'Not authorized' });
-    }
-
-    // Get valid transitions for this role
     const transitions = {};
     const possibleStates = Object.values(CASE_STATUSES);
-    
     for (const nextStatus of possibleStates) {
       const validation = isValidTransitionForRole(caseData.status, nextStatus, userRole);
       if (validation.valid) {
@@ -479,21 +508,13 @@ export const getCaseHistory = async (req, res) => {
     const userId = req.user.id;
     const userRole = req.user.role;
 
-    const caseData = await Case.findById(caseId);
+    const caseData = req.caseData || await Case.findById(caseId);
     if (!caseData) {
       return res.status(404).json({ error: 'Case not found' });
     }
 
-    // Check authorization
-    if (userRole === 'client' && caseData.clientId.toString() !== userId) {
+    if (!ensureCaseMembership(req, caseData)) {
       return res.status(403).json({ error: 'Not authorized' });
-    }
-    if ((userRole === 'lawyer' || userRole === 'paralegal')) {
-      const isCreator = caseData.caseCreatedBy.toString() === userId;
-      const isAssigned = caseData.assignedUsers.some(u => u.userId.toString() === userId);
-      if (!isCreator && !isAssigned) {
-        return res.status(403).json({ error: 'Not authorized' });
-      }
     }
 
     const history = await CaseHistory.find({ caseId })
@@ -618,6 +639,14 @@ export const addDeadline = async (req, res) => {
       date: new Date(date)
     });
 
+    caseData.notifications = caseData.notifications || [];
+    caseData.notifications.unshift(createNotification({
+      message: `A new deadline '${title}' was added for ${new Date(date).toLocaleDateString()}.`,
+      type: 'deadline',
+      recipientRoles: ['client'],
+      recipientIds: [caseData.clientId]
+    }));
+
     await caseData.save();
 
     // Log deadline addition
@@ -665,6 +694,105 @@ export const deleteDeadline = async (req, res) => {
     res.json({
       success: true,
       message: 'Deadline deleted successfully',
+      case: caseData
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+/**
+ * Create a task for a paralegal within the case
+ */
+export const createTask = async (req, res) => {
+  try {
+    const { caseId } = req.params;
+    const { title, description, assignedTo, dueDate } = req.body;
+    const userId = req.user.id;
+
+    if (!title || !assignedTo) {
+      return res.status(400).json({ error: 'Title and assignedTo are required' });
+    }
+
+    const caseData = req.caseData || await Case.findById(caseId);
+    if (!caseData) {
+      return res.status(404).json({ error: 'Case not found' });
+    }
+
+    const caseRole = getCaseRoleForRequest(req, caseData);
+    if (caseRole !== 'lawyer') {
+      return res.status(403).json({ error: 'Only lawyers can create tasks' });
+    }
+
+    const assignedUser = caseData.assignedUsers.find(u => u.userId.toString() === assignedTo);
+    if (!assignedUser || assignedUser.role !== 'paralegal') {
+      return res.status(400).json({ error: 'Tasks must be assigned to a paralegal already assigned to the case' });
+    }
+
+    const task = {
+      id: Date.now().toString(),
+      title,
+      description: description || '',
+      assignedTo,
+      assignedRole: 'paralegal',
+      createdBy: userId,
+      dueDate: dueDate ? new Date(dueDate) : null
+    };
+
+    caseData.tasks.push(task);
+    await caseData.save();
+
+    res.status(201).json({
+      success: true,
+      message: 'Task created successfully',
+      task,
+      case: caseData
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+/**
+ * Update the status of a task
+ */
+export const updateTaskStatus = async (req, res) => {
+  try {
+    const { caseId, taskId } = req.params;
+    const { status } = req.body;
+    const userId = req.user.id;
+
+    const allowedStatuses = ['open', 'in_progress', 'completed'];
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).json({ error: 'Invalid task status' });
+    }
+
+    const caseData = req.caseData || await Case.findById(caseId);
+    if (!caseData) {
+      return res.status(404).json({ error: 'Case not found' });
+    }
+
+    const task = caseData.tasks.find(t => t.id === taskId);
+    if (!task) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+
+    const caseRole = getCaseRoleForRequest(req, caseData);
+    if (caseRole !== 'paralegal' || task.assignedTo.toString() !== userId) {
+      return res.status(403).json({ error: 'Only the assigned paralegal can update this task' });
+    }
+
+    task.status = status;
+    if (status === 'completed') {
+      task.completedAt = new Date();
+    }
+
+    await caseData.save();
+
+    res.json({
+      success: true,
+      message: 'Task updated successfully',
+      task,
       case: caseData
     });
   } catch (error) {
@@ -800,9 +928,9 @@ export const assignUser = async (req, res) => {
       return res.status(404).json({ error: 'Case not found' });
     }
 
-    // Only creator can assign users
-    if (caseData.caseCreatedBy.toString() !== requesterId) {
-      return res.status(403).json({ error: 'Only the case creator can assign users' });
+    // Only creator or admin can assign users
+    if (caseData.caseCreatedBy.toString() !== requesterId && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Only the case creator or an admin can assign users' });
     }
 
     // Verify user exists and has correct role
@@ -822,6 +950,14 @@ export const assignUser = async (req, res) => {
       userId: assignUserId,
       role: user.role
     });
+
+    caseData.notifications = caseData.notifications || [];
+    caseData.notifications.unshift(createNotification({
+      message: `You have been assigned to a new case by ${req.user.name || req.user.email || 'the lawyer'}.`,
+      type: 'assignment',
+      recipientRoles: [user.role],
+      recipientIds: [assignUserId]
+    }));
 
     await caseData.save();
 
@@ -861,9 +997,9 @@ export const removeUser = async (req, res) => {
       return res.status(404).json({ error: 'Case not found' });
     }
 
-    // Only creator can remove users
-    if (caseData.caseCreatedBy.toString() !== requesterId) {
-      return res.status(403).json({ error: 'Only the case creator can remove users' });
+    // Only creator or admin can remove users
+    if (caseData.caseCreatedBy.toString() !== requesterId && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Only the case creator or an admin can remove users' });
     }
 
     // Cannot remove creator

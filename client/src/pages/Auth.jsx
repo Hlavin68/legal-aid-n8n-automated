@@ -22,6 +22,7 @@ function LoginPage() {
     email: '',
     password: '',
     confirmPassword: '',
+    username: '',
     firm: '',
     licenseNumber: ''
   });
@@ -31,12 +32,23 @@ function LoginPage() {
     setError('');
     setLoading(true);
 
-    const result = await login(loginData.email, loginData.password);
+    try {
+      const result = await login(loginData.email, loginData.password);
 
-    if (result.success) {
-      navigate(result.user.role === 'lawyer' ? '/lawyer/dashboard' : '/client/dashboard');
-    } else {
-      setError(result.error);
+      if (result.success) {
+        const roleRoutes = {
+          lawyer: '/lawyer/dashboard',
+          paralegal: '/staff/dashboard',
+          client: '/client/dashboard',
+          admin: '/admin/dashboard'
+        };
+
+        navigate(roleRoutes[result.user.role] || '/admin/dashboard');
+      } else {
+        setError(result.error);
+      }
+    } catch (err) {
+      setError('Something went wrong. Please try again.');
     }
 
     setLoading(false);
@@ -53,22 +65,39 @@ function LoginPage() {
 
     setLoading(true);
 
-    const result = await register(
-      registerData.name,
-      registerData.email,
-      registerData.password,
-      role,
-      role === 'lawyer' ? registerData.firm : null,
-      role === 'lawyer' ? registerData.licenseNumber : null
-    );
+    try {
+      const result = await register(
+        registerData.name,
+        registerData.email,
+        registerData.password,
+        role,
+        registerData.firm || null,
+        registerData.licenseNumber || null,
+        registerData.username || null
+      );
 
-    if (result.success) {
-      navigate(role === 'lawyer' ? '/lawyer/dashboard' : '/client/dashboard');
-    } else {
-      setError(result.error);
+      if (result.success) {
+        const roleRoutes = {
+          lawyer: '/lawyer/dashboard',
+          paralegal: '/staff/dashboard',
+          client: '/client/dashboard',
+          admin: '/admin/dashboard'
+        };
+
+        navigate(roleRoutes[role] || '/admin/dashboard');
+      } else {
+        setError(result.error);
+      }
+    } catch (err) {
+      setError('Registration failed. Please try again.');
     }
 
     setLoading(false);
+  };
+
+  const switchMode = (mode) => {
+    setIsLogin(mode === 'login');
+    setError('');
   };
 
   return (
@@ -120,7 +149,7 @@ function LoginPage() {
                       type="submit"
                       variant="primary"
                       size="lg"
-                      disabled={loading}
+                      disabled={loading || !loginData.email || !loginData.password}
                       className="w-100"
                     >
                       {loading ? 'Signing in...' : 'Sign In'}
@@ -131,7 +160,7 @@ function LoginPage() {
                     <p>Don't have an account?</p>
                     <button
                       type="button"
-                      onClick={() => setIsLogin(false)}
+                      onClick={() => switchMode('register')}
                       className="btn btn-link"
                     >
                       Create Account
@@ -149,7 +178,9 @@ function LoginPage() {
                       onChange={setRole}
                       options={[
                         { value: 'client', label: 'Client' },
-                        { value: 'lawyer', label: 'Lawyer / Paralegal' }
+                        { value: 'lawyer', label: 'Lawyer' },
+                        { value: 'paralegal', label: 'Paralegal' },
+                        { value: 'admin', label: 'Admin' }
                       ]}
                     />
 
@@ -192,24 +223,37 @@ function LoginPage() {
                       required
                     />
 
-                    {role === 'lawyer' && (
-                      <>
-                        <TextInput
-                          label="Law Firm"
-                          value={registerData.firm}
-                          onChange={(value) =>
-                            setRegisterData({ ...registerData, firm: value })
-                          }
-                        />
+                    {role === 'paralegal' && (
+                      <TextInput
+                        label="Username"
+                        value={registerData.username}
+                        onChange={(value) =>
+                          setRegisterData({ ...registerData, username: value })
+                        }
+                        required
+                      />
+                    )}
 
-                        <TextInput
-                          label="License Number"
-                          value={registerData.licenseNumber}
-                          onChange={(value) =>
-                            setRegisterData({ ...registerData, licenseNumber: value })
-                          }
-                        />
-                      </>
+                    {(role === 'lawyer' || role === 'paralegal') && (
+                      <TextInput
+                        label="Law Firm"
+                        value={registerData.firm}
+                        onChange={(value) =>
+                          setRegisterData({ ...registerData, firm: value })
+                        }
+                        required
+                      />
+                    )}
+
+                    {role === 'lawyer' && (
+                      <TextInput
+                        label="License Number"
+                        value={registerData.licenseNumber}
+                        onChange={(value) =>
+                          setRegisterData({ ...registerData, licenseNumber: value })
+                        }
+                        required
+                      />
                     )}
 
                     <Button
@@ -227,7 +271,7 @@ function LoginPage() {
                     <p>Already have an account?</p>
                     <button
                       type="button"
-                      onClick={() => setIsLogin(true)}
+                      onClick={() => switchMode('login')}
                       className="btn btn-link"
                     >
                       Sign In

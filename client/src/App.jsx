@@ -10,6 +10,7 @@ import LoginPage from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import ChatPage from "./pages/ChatPage";
 import CaseDetails from "./pages/CaseDetails";
+import DraftingPleadings from "./pages/DraftingPleadings";
 import DocumentGenerator from "./pages/DocumentGenerator";
 import CaseBase from "./pages/CaseBase";
 import CaseBaseDetails from "./pages/CaseBaseDetails";
@@ -23,15 +24,16 @@ function App() {
         <Router>
           <div className="d-flex flex-column min-vh-100">
             <Routes>
+
               {/* ✅ PUBLIC ROUTES */}
               <Route path="/" element={<Home />} />
               <Route path="/auth" element={<LoginPage />} />
 
-              {/* ✅ PROTECTED ROUTES */}
+              {/* ✅ PROTECTED APP WRAPPER */}
               <Route element={<ProtectedRoute />}>
                 <Route element={<AppLayout />}>
 
-                  {/* CLIENT */}
+                  {/* ================= CLIENT ================= */}
                   <Route
                     path="/client/dashboard"
                     element={<ProtectedRoute requiredRole="client"><Dashboard /></ProtectedRoute>}
@@ -57,7 +59,7 @@ function App() {
                     element={<ProtectedRoute requiredRole="client"><CaseBaseDetails /></ProtectedRoute>}
                   />
 
-                  {/* LAWYER */}
+                  {/* ================= LAWYER ================= */}
                   <Route
                     path="/lawyer/dashboard"
                     element={<ProtectedRoute requiredRole="lawyer"><Dashboard /></ProtectedRoute>}
@@ -65,6 +67,10 @@ function App() {
                   <Route
                     path="/lawyer/case/:caseId"
                     element={<ProtectedRoute requiredRole="lawyer"><CaseDetails /></ProtectedRoute>}
+                  />
+                  <Route
+                    path="/lawyer/case/:caseId/pleadings"
+                    element={<ProtectedRoute requiredRole="lawyer"><DraftingPleadings /></ProtectedRoute>}
                   />
                   <Route
                     path="/lawyer/documents"
@@ -87,11 +93,40 @@ function App() {
                     element={<ProtectedRoute requiredRole="lawyer"><UploadCase /></ProtectedRoute>}
                   />
 
+                  {/* ================= PARALEGAL ================= */}
+                  <Route
+                    path="/staff/dashboard"
+                    element={<ProtectedRoute requiredRole="paralegal"><Dashboard /></ProtectedRoute>}
+                  />
+                  <Route
+                    path="/staff/case/:caseId"
+                    element={<ProtectedRoute requiredRole="paralegal"><CaseDetails /></ProtectedRoute>}
+                  />
+                  <Route
+                    path="/staff/case/:caseId/pleadings"
+                    element={<ProtectedRoute requiredRole="paralegal"><DraftingPleadings /></ProtectedRoute>}
+                  />
+                  <Route
+                    path="/staff/chat"
+                    element={<ProtectedRoute requiredRole="paralegal"><ChatPage /></ProtectedRoute>}
+                  />
+                  <Route
+                    path="/staff/case-base"
+                    element={<ProtectedRoute requiredRole="paralegal"><CaseBase /></ProtectedRoute>}
+                  />
+
+                  {/* ================= ADMIN ================= */}
+                  <Route
+                    path="/admin/dashboard"
+                    element={<ProtectedRoute requiredRole="admin"><Dashboard /></ProtectedRoute>}
+                  />
+
                 </Route>
               </Route>
 
-              {/* Fallback */}
+              {/* ✅ FALLBACK */}
               <Route path="*" element={<Navigate to="/" replace />} />
+
             </Routes>
           </div>
         </Router>

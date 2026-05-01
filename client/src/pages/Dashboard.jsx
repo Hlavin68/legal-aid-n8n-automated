@@ -30,7 +30,7 @@ function Dashboard() {
     setCurrentCaseId(caseId);
 
     const prefix =
-      user?.role === "lawyer" ? "/lawyer" : "/client";
+      user?.role === "lawyer" ? "/lawyer" : user?.role === "paralegal" ? "/staff" : "/client";
 
     navigate(`${prefix}/case/${caseId}`);
   };
@@ -50,6 +50,14 @@ function Dashboard() {
       </div>
     );
   }
+
+  const userId = user?.id || user?._id;
+    const sortedCases = [...cases].sort((a, b) => {
+    if (a.status === "Closed" && b.status !== "Closed") return 1;
+    if (a.status !== "Closed" && b.status === "Closed") return -1;
+
+    return new Date(b.updatedAt) - new Date(a.updatedAt);
+  });
 
   return (
     <div
@@ -107,7 +115,7 @@ function Dashboard() {
         <div className="container">
           <div className="row g-4">
 
-            {cases.map((caseItem) => {
+            {sortedCases.map((caseItem) => {
               const caseId = caseItem._id || caseItem.id;
 
               const updatedDate = caseItem.updatedAt
@@ -156,7 +164,17 @@ function Dashboard() {
                         <span> {caseItem.notes?.length || 0} Notes</span>
                         <span> {caseItem.documents?.length || 0} Docs</span>
                         <span> {caseItem.deadlines?.length || 0} Deadlines</span>
-
+                        <span>
+                          {(
+                            caseItem.notifications || []
+                          ).filter((notification) => {
+                            const recipientByRole = notification.recipientRoles?.includes(user?.role);
+                            const recipientById = notification.recipientIds?.some(
+                              (id) => id?.toString?.() === userId
+                            );
+                            return recipientByRole || recipientById || (!notification.recipientRoles?.length && !notification.recipientIds?.length);
+                          }).length} Inbox
+                        </span>
                       </div>
 
                     </div>

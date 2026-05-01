@@ -62,6 +62,11 @@ const documentSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  status: {
+    type: String,
+    enum: ['draft', 'review', 'approved'],
+    default: 'draft'
+  },
   url: {
     type: String,
     default: null
@@ -73,6 +78,102 @@ const documentSchema = new mongoose.Schema({
   uploadedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
+  },
+  reviewedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null
+  },
+  approvedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null
+  },
+  reviewedAt: {
+    type: Date,
+    default: null
+  },
+  approvedAt: {
+    type: Date,
+    default: null
+  }
+});
+
+const taskSchema = new mongoose.Schema({
+  id: {
+    type: String
+  },
+  title: {
+    type: String,
+    required: true
+  },
+  description: {
+    type: String,
+    default: ''
+  },
+  status: {
+    type: String,
+    enum: ['open', 'in_progress', 'completed'],
+    default: 'open'
+  },
+  assignedTo: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  assignedRole: {
+    type: String,
+    enum: ['paralegal'],
+    required: true,
+    default: 'paralegal'
+  },
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  dueDate: {
+    type: Date,
+    default: null
+  },
+  completedAt: {
+    type: Date,
+    default: null
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
+});
+
+const notificationSchema = new mongoose.Schema({
+  id: {
+    type: String
+  },
+  message: {
+    type: String,
+    required: true
+  },
+  type: {
+    type: String,
+    enum: ['assignment', 'document', 'status', 'deadline', 'workflow'],
+    default: 'workflow'
+  },
+  recipientRoles: [{
+    type: String,
+    enum: ['lawyer', 'paralegal', 'client', 'admin']
+  }],
+  recipientIds: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
+  seenBy: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
+  createdAt: {
+    type: Date,
+    default: Date.now
   }
 });
 
@@ -146,6 +247,7 @@ const caseSchema = new mongoose.Schema(
     }],
     notes: [noteSchema],
     documents: [documentSchema],
+    tasks: [taskSchema],
     deadlines: [deadlineSchema],
     hearingDates: [hearingDateSchema],
     suggestedSteps: [String],
@@ -157,7 +259,8 @@ const caseSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
       description: 'Whether this case is published to case base (completed cases)'
-    }
+    },
+    notifications: [notificationSchema]
   },
   { timestamps: true }
 );

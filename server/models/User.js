@@ -22,8 +22,12 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['client', 'lawyer', 'paralegal'],
+      enum: ['client', 'lawyer', 'paralegal', 'admin'],
       required: [true, 'Role is required']
+    },
+    username: {
+      type: String,
+      default: null
     },
     firm: {
       type: String,

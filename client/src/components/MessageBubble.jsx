@@ -1,6 +1,6 @@
 import React from 'react';
 
-function MessageBubble({ role, text }) {
+function MessageBubble({ role, text, className = '', style = {} }) {
   const isUser = role === 'user';
   
   // Format text to handle line breaks and list items
@@ -47,8 +47,8 @@ function MessageBubble({ role, text }) {
       isUser
         ? 'bg-primary text-white'
         : 'bg-white border'
-    }`}
-    style={{ maxWidth: '75%' }}
+    } ${className}`}
+    style={{ maxWidth: '75%', ...style }}
   >
     {typeof text === 'string' ? formatText(text) : text}
   </div>
