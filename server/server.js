@@ -9,7 +9,7 @@ import authRoutes from './routes/auth.js';
 import caseRoutes from './routes/cases.js';
 import documentRoutes from './routes/documents.js';
 import caseBaseRoutes from './routes/caseBase.js';
-
+import triageRoutes from './routes/triage.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, '.env') });
@@ -40,6 +40,7 @@ app.use('/api/cases', caseRoutes);
 app.use('/api/case-base', caseBaseRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/triage', triageRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

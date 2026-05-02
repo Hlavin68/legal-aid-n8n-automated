@@ -116,14 +116,18 @@ export const chatAPI = {
   updateSession: (sessionId, data) =>
     apiClient.put(`/chat/sessions/${sessionId}`, data),
 
-  deleteSession: (sessionId) =>
-    apiClient.delete(`/chat/sessions/${sessionId}`),
+  deleteSession: (sessionId) => apiClient.delete(`/chat/sessions/${sessionId}`),
 
   toggleArchiveSession: (sessionId) =>
     apiClient.put(`/chat/sessions/${sessionId}/toggle-archive`),
 
   deleteMessage: (sessionId, messageId) =>
     apiClient.delete(`/chat/sessions/${sessionId}/messages/${messageId}`)
+};
+
+// ================= TRIAGE =================
+export const triageAPI = {
+  submit: (data) => apiClient.post('/triage', data)
 };
 
 // ================= DOCUMENTS =================
