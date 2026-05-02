@@ -15,6 +15,7 @@ import DocumentGenerator from "./pages/DocumentGenerator";
 import CaseBase from "./pages/CaseBase";
 import CaseBaseDetails from "./pages/CaseBaseDetails";
 import UploadCase from "./pages/UploadCase";
+import TriageCase from "./pages/TriageCase";
 import Home from "./pages/Home";
 
 function App() {
@@ -49,6 +50,10 @@ function App() {
                   <Route
                     path="/client/chat"
                     element={<ProtectedRoute requiredRole="client"><ChatPage /></ProtectedRoute>}
+                  />
+                  <Route
+                    path="/client/triage"
+                    element={<ProtectedRoute requiredRole="client"><TriageCase /></ProtectedRoute>}
                   />
                   <Route
                     path="/client/case-base"

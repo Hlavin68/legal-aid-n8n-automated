@@ -67,6 +67,7 @@ function Navigation() {
     isClient ? '/client/case-base' : isLawyer ? '/lawyer/case-base' : isParalegal ? '/staff/case-base' : '/';
   const documentsPath =
     isClient ? '/client/documents' : isLawyer ? '/lawyer/documents' : '/';
+  const triagePath = '/client/triage';
 
   const handleLogout = () => {
     logout();
@@ -126,6 +127,16 @@ function Navigation() {
               </li>
             )}
 
+            {isClient && (
+              <li className="nav-item">
+                <Link
+                  to={triagePath}
+                  className={`nav-link ${isActive(triagePath) ? 'active' : ''}`}
+                >
+                   Triage
+                </Link>
+              </li>
+            )}
             {(isClient || isLawyer || isParalegal) && (
               <li className="nav-item">
                 <Link
