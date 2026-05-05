@@ -7,6 +7,8 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import AppLayout from "./components/AppLayout";
 
 import LoginPage from "./pages/Auth";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
 import ChatPage from "./pages/ChatPage";
 import CaseDetails from "./pages/CaseDetails";
@@ -29,6 +31,8 @@ function App() {
               {/* ✅ PUBLIC ROUTES */}
               <Route path="/" element={<Home />} />
               <Route path="/auth" element={<LoginPage />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password/:token" element={<ResetPassword />} />
 
               {/* ✅ PROTECTED APP WRAPPER */}
               <Route element={<ProtectedRoute />}>

@@ -6,7 +6,10 @@ import {
   login,
   getCurrentUser,
   updateProfile,
-  getUsers
+  getUsers,
+  forgotPassword,
+  validateResetToken,
+  resetPassword
 } from '../controllers/authController.js';
 
 import { authenticate } from '../middleware/auth.js';
@@ -95,5 +98,16 @@ router.post('/logout', authenticate, (req, res) => {
     message: 'Logged out successfully'
   });
 });
+
+// ================= PASSWORD RESET ROUTES =================
+
+// Request password reset
+router.post('/forgot-password', authLimiter, forgotPassword);
+
+// Validate reset token
+router.get('/validate-reset-token/:token', validateResetToken);
+
+// Reset password with token
+router.post('/reset-password', resetPassword);
 
 export default router;

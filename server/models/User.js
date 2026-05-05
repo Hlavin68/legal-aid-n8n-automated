@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import bcryptjs from 'bcryptjs';
+import crypto from 'crypto';
 
 const userSchema = new mongoose.Schema(
   {
@@ -44,6 +45,14 @@ const userSchema = new mongoose.Schema(
     isActive: {
       type: Boolean,
       default: true
+    },
+    resetPasswordToken: {
+      type: String,
+      default: null
+    },
+    resetPasswordExpire: {
+      type: Date,
+      default: null
     }
   },
   { timestamps: true }
@@ -69,7 +78,46 @@ userSchema.methods.comparePassword = async function(enteredPassword) {
   return await bcryptjs.compare(enteredPassword, this.password);
 };
 
+// Method to generate password reset token
+userSchema.methods.generatePasswordResetToken = function() {
+  // Generate a random token
+  const resetToken = crypto.randomBytes(32).toString('hex');
+  
+  // Hash the token and store it
+  this.resetPasswordToken = crypto
+    .createHash('sha256')
+    .update(resetToken)
+    .digest('hex');
+  
+  // Set token expiration to 1 hour from now
+  this.resetPasswordExpire = Date.now() + 60 * 60 * 1000;
+  
+  // Return the unhashed token to be sent to user
+  return resetToken;
+};
+
+// Method to validate reset token
+userSchema.methods.validateResetToken = function(token) {
+  const hashedToken = crypto
+    .createHash('sha256')
+    .update(token)
+    .digest('hex');
+  
+  // Check if token matches and hasn't expired
+  return (
+    this.resetPasswordToken === hashedToken &&
+    this.resetPasswordExpire > Date.now()
+  );
+};
+
+// Method to clear reset token
+userSchema.methods.clearResetToken = function() {
+  this.resetPasswordToken = null;
+  this.resetPasswordExpire = null;
+};
+
 // Method to get user without sensitive data
+
 userSchema.methods.toJSON = function() {
   const obj = this.toObject();
   delete obj.password;

@@ -157,6 +157,15 @@ function LoginPage() {
                   </form>
 
                   <div className="text-center mt-3">
+                    <p className="mb-2">
+                      <button
+                        type="button"
+                        onClick={() => navigate('/forgot-password')}
+                        className="btn btn-link btn-sm p-0"
+                      >
+                        Forgot Password?
+                      </button>
+                    </p>
                     <p>Don't have an account?</p>
                     <button
                       type="button"
@@ -180,7 +189,6 @@ function LoginPage() {
                         { value: 'client', label: 'Client' },
                         { value: 'lawyer', label: 'Lawyer' },
                         { value: 'paralegal', label: 'Paralegal' },
-                        { value: 'admin', label: 'Admin' }
                       ]}
                     />
 

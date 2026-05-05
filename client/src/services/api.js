@@ -64,7 +64,30 @@ export const authAPI = {
   login: (data) => apiClient.post('/auth/login', data),
   getCurrentUser: () => apiClient.get('/auth/me'),
   updateProfile: (data) => apiClient.put('/auth/profile', data),
-  getUsers: () => apiClient.get('/auth/users')
+  getUsers: () => apiClient.get('/auth/users'),
+  forgotPassword: (email) => apiClient.post('/auth/forgot-password', { email }),
+  validateResetToken: (token) => apiClient.get(`/auth/validate-reset-token/${token}`),
+  resetPassword: (token, password, confirmPassword) =>
+    apiClient.post('/auth/reset-password', { token, password, confirmPassword })
+};
+
+// ================= PASSWORD RESET (Convenience exports) =================
+export const forgotPassword = (email) => {
+  return authAPI.forgotPassword(email)
+    .then(res => res.data)
+    .catch(err => ({ success: false, error: handleAPIError(err).message }));
+};
+
+export const validateResetToken = (token) => {
+  return authAPI.validateResetToken(token)
+    .then(res => res.data)
+    .catch(err => ({ success: false, error: handleAPIError(err).message }));
+};
+
+export const resetPassword = (token, password, confirmPassword) => {
+  return authAPI.resetPassword(token, password, confirmPassword)
+    .then(res => res.data)
+    .catch(err => ({ success: false, error: handleAPIError(err).message }));
 };
 
 // ================= CASE =================

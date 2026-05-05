@@ -34,6 +34,15 @@ function TriageCase() {
     }
   }, [loading, isAuthenticated, user, navigate]);
 
+  const mapN8NLevelToUILevel = (n8nLevel) => {
+    const levelMap = {
+      'self_help': 'safe',
+      'warning': 'warning',
+      'urgent': 'urgent'
+    };
+    return levelMap[n8nLevel] || 'safe';
+  };
+
   const handleSubmit = async () => {
     try {
       const payload = {
@@ -46,12 +55,21 @@ function TriageCase() {
       const response = await triageAPI.submit(payload);
 
       const data = response.data?.data || response.data;
-      const resultMessage = data?.message || data?.response || 'Triage submitted successfully.';
+      
+      // Handle array response from n8n
+      const triageResult = Array.isArray(data) ? data[0] : data;
+      
+      // Extract fields from n8n response
+      const n8nLevel = triageResult?.level || 'self_help';
+      const uiLevel = mapN8NLevelToUILevel(n8nLevel);
+      const recommendation = triageResult?.recommendation || 'Triage submitted successfully.';
+      const reason = triageResult?.reason || 'Your situation has been assessed.';
 
       setResult({
-        level: 'safe',
-        message: resultMessage,
-        reason: 'Your situation has been sent for triage processing.'
+        level: uiLevel,
+        message: recommendation,
+        reason: reason,
+        score: triageResult?.score
       });
     } catch (error) {
       console.error('Triage submit error:', error);
@@ -92,8 +110,14 @@ function TriageCase() {
           {result.level === "safe" && "✅ Self-Help May Be Enough"}
         </h4>
 
+        {result.score && (
+          <p className="text-muted small mt-2">
+            Assessment Score: <strong>{result.score}/10</strong>
+          </p>
+        )}
+
         <p className="mt-3">{result.message}</p>
-        <p><strong>Why:</strong> {result.reason}</p>
+        <p><strong>Assessment:</strong> {result.reason}</p>
 
         <hr />
 
