@@ -27,7 +27,6 @@ export function EvidenceUpload({ caseId, onDocumentAdded }) {
         {
           headers: {
             Authorization: `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data'
           }
         }
       );

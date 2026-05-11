@@ -91,7 +91,10 @@ caseBaseSchema.index({ createdAt: -1 });
 
 // Virtual for case URL
 caseBaseSchema.virtual('caseUrl').get(function() {
-  return `http://localhost:5000/${this.pdfUrl}`;
+  const normalizedPath = this.pdfUrl?.startsWith('/')
+    ? this.pdfUrl
+    : `/${this.pdfUrl}`;
+  return `http://localhost:5000${normalizedPath}`;
 });
 
 // Ensure virtuals are included in JSON

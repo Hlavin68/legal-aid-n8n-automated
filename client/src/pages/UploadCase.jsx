@@ -168,7 +168,6 @@ export default function UploadCase() {
         {
           headers: {
             Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
           },
           onUploadProgress: (event) => {
             if (!event.total) return;
@@ -481,7 +480,7 @@ export default function UploadCase() {
       <div className="card border-0 bg-light mt-4">
         <div className="card-body">
           <h6 className="fw-bold mb-2">
-            📋 Tips for Uploading
+             Tips for Uploading
           </h6>
 
           <ul className="small mb-0">

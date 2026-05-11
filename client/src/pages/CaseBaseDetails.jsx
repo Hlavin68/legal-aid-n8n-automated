@@ -4,6 +4,14 @@ import { useAuth } from "../hooks/useAuth";
 import axios from "axios";
 
 const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
+const BACKEND_BASE_URL = (process.env.REACT_APP_API_URL || "http://localhost:5000/api").replace(/\/api\/?$/, "");
+
+const buildPdfUrl = (pdfUrl) => {
+  if (!pdfUrl) return null;
+  const normalizedPath = pdfUrl.startsWith("/") ? pdfUrl : `/${pdfUrl}`;
+  return `${BACKEND_BASE_URL}${normalizedPath}`;
+};
+
 /**
  * CaseBaseDetails Component
  * Displays full details of a legal case with PDF viewer
@@ -11,7 +19,6 @@ const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
  */
 export function CaseBaseDetails() {
   const { caseId } = useParams();
-  console.log("Frontend caseId:", caseId);
 
   const navigate = useNavigate();
   const { token, user } = useAuth();
@@ -57,7 +64,7 @@ export function CaseBaseDetails() {
 
     try {
       const link = document.createElement("a");
-      link.href = `http://localhost:5000/${caseData.pdfUrl}`;
+      link.href = buildPdfUrl(caseData.pdfUrl);
       link.download = `${caseData.title.replace(/\s+/g, "_")}.pdf`;
       document.body.appendChild(link);
       link.click();
@@ -345,7 +352,7 @@ export function CaseBaseDetails() {
             <h5 className="mb-3">PDF Document</h5>
 
             <iframe
-              src={`http://localhost:5000/${caseData.pdfUrl}`}
+              src={buildPdfUrl(caseData.pdfUrl)}
               title="Case PDF"
               style={{
                 width: "100%",
@@ -364,7 +371,7 @@ export function CaseBaseDetails() {
               </button>
 
               <a
-                href={`http://localhost:5000/${caseData.pdfUrl}`}
+                href={buildPdfUrl(caseData.pdfUrl)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn btn-sm btn-outline-secondary ms-2"
