@@ -116,8 +116,8 @@ export function CreateCaseModal({ isOpen, onClose, onCreateCase }) {
     }
   };
 
-  // Only show modal to lawyers and paralegals
-  if (!user || (user.role !== 'lawyer' && user.role !== 'paralegal')) {
+  // Only show modal to lawyers
+  if (!user || user.role !== 'lawyer') {
     return null;
   }
   return (

@@ -93,10 +93,10 @@ export const createCase = async (req, res) => {
     const userId = req.user.id;
     const userRole = req.user.role;
 
-    // Only lawyers and paralegals can create cases
-    if (userRole !== 'lawyer' && userRole !== 'paralegal') {
+    // Only lawyers can create cases
+    if (userRole !== 'lawyer') {
       return res.status(403).json({
-        error: 'Only lawyers and paralegals can create cases'
+        error: 'Only lawyers can create cases'
       });
     }
 

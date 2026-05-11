@@ -48,8 +48,8 @@ router.get('/:caseId/history', loadCase, requireCaseMembership(), getCaseHistory
 // Get available status transitions for this user
 router.get('/:caseId/transitions', loadCase, requireCaseMembership(), getAvailableTransitions);
 
-// Create case (lawyers and paralegals only - they create for clients)
-router.post('/', authorize(['lawyer', 'paralegal']), createCase);
+// Create case (lawyers only - they create for clients)
+router.post('/', authorize(['lawyer']), createCase);
 
 // Update case details (not status)
 router.put('/:caseId', updateCase);
