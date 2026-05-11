@@ -104,7 +104,7 @@ function CaseDashboard() {
         </div>
 
         <div className="header-actions">
-          {isLegal && (
+          {isLawyer && (
             <>
               <button 
                 className="btn btn-primary"
@@ -196,7 +196,7 @@ function CaseDashboard() {
       </div>
 
       {/* Workflow Status - Lawyer View */}
-      {isLegal && (
+      {isLawyer && (
         <div className="workflow-section">
           <h2>Cases by Status</h2>
           <div className="workflow-grid">
@@ -235,9 +235,10 @@ function CaseDashboard() {
             <h3>No cases yet</h3>
             <p>
               {isClient && 'Your cases will appear here once your lawyer creates them'}
-              {isLegal && 'Create your first case to get started'}
+              {isLawyer && 'Create your first case to get started'}
+              {isParalegal && 'Cases will appear here'}
             </p>
-            {isLegal && (
+            {isLawyer && (
               <button 
                 className="btn btn-primary"
                 onClick={() => navigate('/lawyer/cases')}
