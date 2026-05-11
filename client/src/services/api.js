@@ -157,9 +157,7 @@ export const triageAPI = {
 export const documentAPI = {
   generateDocument: (data) => apiClient.post('/documents/generate', data),
   uploadDocument: (caseId, formData) =>
-    apiClient.post(`/documents/${caseId}/upload`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    }),
+    apiClient.post(`/documents/${caseId}/upload`, formData),
   getDocuments: (caseId) => apiClient.get(`/documents/${caseId}`),
   deleteDocument: (caseId, documentId) => apiClient.delete(`/documents/${caseId}/${documentId}`),
   updateDocumentStatus: (caseId, documentId, status) =>
